@@ -65,3 +65,4 @@ c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\r
 C:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\GoodbyeD.AFDEEA64.Up2Date
 C:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\GoodbyeDiplom.genruntimeconfig.cache
 C:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\ref\GoodbyeDiplom.dll
+c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\GoodbyeDiplom.sourcelink.json
