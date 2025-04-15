@@ -1,0 +1,508 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Media;
+using Avalonia.Controls.Shapes;
+using System;
+using System.Collections.Generic;
+using Avalonia.Interactivity;
+using System.Linq;
+
+namespace GoodbyeDiplom.Views
+{
+    public partial class MainWindow : Window
+    {
+        private const int GridSize = 10;
+        private double _cellSize = 40;
+        private Point _lastMousePosition;
+        private double _angleX = 35 * Math.PI / 180;
+        private double _angleY = -45 * Math.PI / 180;
+        private bool _isDragging;
+        private double _zoom = 1.0;
+        private List<Shape> _surfaceTriangles = new List<Shape>();
+
+        public MainWindow()
+        {
+            Title = "3D Function Surface (Z Vertical)";
+            Width = 800;
+            Height = 600;
+            
+            this.Content = new Canvas();
+            this.PointerPressed += OnPointerPressed;
+            this.PointerReleased += OnPointerReleased;
+            this.PointerMoved += OnPointerMoved;
+            this.PointerWheelChanged += OnPointerWheelChanged;
+            this.SizeChanged += OnSizeChanged;
+        }
+
+        protected override void OnLoaded(RoutedEventArgs e)
+        {
+            base.OnLoaded(e);
+            UpdateGrid();
+        }
+
+        private void OnSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            UpdateGrid();
+        }
+
+        private void OnPointerPressed(object sender, PointerPressedEventArgs e)
+        {
+            _lastMousePosition = e.GetPosition(this);
+            _isDragging = true;
+        }
+
+        private void OnPointerReleased(object sender, PointerReleasedEventArgs e)
+        {
+            _isDragging = false;
+        }
+
+        private void OnPointerMoved(object sender, PointerEventArgs e)
+        {
+            if (!_isDragging) return;
+            
+            var currentPosition = e.GetPosition(this);
+            var delta = currentPosition - _lastMousePosition;
+            
+            _angleY -= delta.X * 0.01;
+            _angleX += delta.Y * 0.01;
+            _angleX = Math.Clamp(_angleX, -Math.PI/2 + 0.1, Math.PI/2 - 0.1);
+            
+            _lastMousePosition = currentPosition;
+            UpdateGrid();
+        }
+
+        private void OnPointerWheelChanged(object sender, PointerWheelEventArgs e)
+        {
+            // Инвертированное масштабирование (скролл вперёд - приближение)
+            var zoomFactor = e.Delta.Y > 0 ? 0.9 : 1.1;
+            _zoom *= zoomFactor;
+            _zoom = Math.Clamp(_zoom, 0.2, 5.0);
+            UpdateGrid();
+        }
+
+        private void UpdateGrid()
+        {
+            if (Content is not Canvas canvas) return;
+
+            canvas.Children.Clear();
+            _surfaceTriangles.Clear();
+            
+            double centerX = Bounds.Width / 2;
+            double centerY = Bounds.Height / 2;
+
+            // Логарифмическое масштабирование сетки
+            double logZoom = Math.Log(_zoom + 1, 2) + 1;
+            _cellSize = Math.Min(Bounds.Width, Bounds.Height) / (20 * logZoom);
+
+            // Адаптивный шаг сетки
+            int dynamicGridStep = (int)Math.Max(1, Math.Round(2 / logZoom));
+            
+            // Рисуем кубический каркас
+            DrawCubeFrame(canvas, centerX, centerY);
+            
+            // Рисуем координатные плоскости с адаптивным шагом
+            DrawXYPlane(canvas, centerX, centerY, dynamicGridStep);
+            DrawXZPlane(canvas, centerX, centerY, dynamicGridStep);
+            DrawYZPlane(canvas, centerX, centerY, dynamicGridStep);
+            
+            // Рисуем поверхность функции (обрезанную по границам сетки)
+            DrawFunctionSurface(canvas, centerX, centerY);
+
+            // Рисуем оси координат
+            DrawAxis(canvas, -GridSize, 0, 0, GridSize, 0, 0, Brushes.Red, "X", centerX, centerY);
+            DrawAxis(canvas, 0, -GridSize, 0, 0, GridSize, 0, Brushes.Green, "Y", centerX, centerY);
+            DrawAxis(canvas, 0, 0, -GridSize*2, 0, 0, GridSize*2, Brushes.Blue, "Z", centerX, centerY);
+        }
+        private void DrawCubeFrame(Canvas canvas, double centerX, double centerY)
+        {
+            Color frameColor = Colors.Black;
+            double thickness = 1.5;
+
+            // Нижняя грань (z = -GridSize)
+            DrawFrameLine(canvas, -GridSize, -GridSize, -GridSize, GridSize, -GridSize, -GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, GridSize, -GridSize, -GridSize, GridSize, GridSize, -GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, GridSize, GridSize, -GridSize, -GridSize, GridSize, -GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, -GridSize, GridSize, -GridSize, -GridSize, -GridSize, -GridSize, frameColor, thickness, centerX, centerY);
+
+            // Верхняя грань (z = GridSize)
+            DrawFrameLine(canvas, -GridSize, -GridSize, GridSize, GridSize, -GridSize, GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, GridSize, -GridSize, GridSize, GridSize, GridSize, GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, GridSize, GridSize, GridSize, -GridSize, GridSize, GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, -GridSize, GridSize, GridSize, -GridSize, -GridSize, GridSize, frameColor, thickness, centerX, centerY);
+
+            // Вертикальные рёбра
+            DrawFrameLine(canvas, -GridSize, -GridSize, -GridSize, -GridSize, -GridSize, GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, GridSize, -GridSize, -GridSize, GridSize, -GridSize, GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, GridSize, GridSize, -GridSize, GridSize, GridSize, GridSize, frameColor, thickness, centerX, centerY);
+            DrawFrameLine(canvas, -GridSize, GridSize, -GridSize, -GridSize, GridSize, GridSize, frameColor, thickness, centerX, centerY);
+        }
+
+        private void DrawFrameLine(Canvas canvas, 
+                                 double x1, double y1, double z1,
+                                 double x2, double y2, double z2,
+                                 Color color, double thickness,
+                                 double centerX, double centerY)
+        {
+            var p1 = ProjectTo2D(x1, y1, z1);
+            var p2 = ProjectTo2D(x2, y2, z2);
+            
+            var line = new Line
+            {
+                StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                Stroke = new SolidColorBrush(color),
+                StrokeThickness = thickness
+            };
+            canvas.Children.Add(line);
+        }
+
+        private void DrawXYPlane(Canvas canvas, double centerX, double centerY, int gridStep)
+        {
+            Color gridColor = Color.FromArgb(80, 150, 150, 150);
+
+            // Линии по X (z=0)
+            for (int x = -GridSize; x <= GridSize; x += gridStep)
+            {
+                var p1 = ProjectTo2D(x, -GridSize, 0);
+                var p2 = ProjectTo2D(x, GridSize, 0);
+                
+                var line = new Line
+                {
+                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                    Stroke = new SolidColorBrush(gridColor),
+                    StrokeThickness = 0.5
+                };
+                canvas.Children.Add(line);
+
+                // Подписи оси X
+                if (x % (gridStep * 2) == 0 && x != 0)
+                {
+                    var labelPos = ProjectTo2D(x, -0.1, 0);
+                    DrawLabel(canvas, x.ToString(), Brushes.Black, labelPos, centerX, centerY, horizontal: true);
+                }
+            }
+
+            // Линии по Y (z=0)
+            for (int y = -GridSize; y <= GridSize; y += gridStep)
+            {
+                var p1 = ProjectTo2D(-GridSize, y, 0);
+                var p2 = ProjectTo2D(GridSize, y, 0);
+                
+                var line = new Line
+                {
+                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                    Stroke = new SolidColorBrush(gridColor),
+                    StrokeThickness = 0.5
+                };
+                canvas.Children.Add(line);
+
+                // Подписи оси Y
+                if (y % (gridStep * 2) == 0 && y != 0)
+                {
+                    var labelPos = ProjectTo2D(0, y, 0);
+                    DrawLabel(canvas, y.ToString(), Brushes.Black, labelPos, centerX, centerY, horizontal: false);
+                }
+            }
+        }
+
+        private void DrawXZPlane(Canvas canvas, double centerX, double centerY, int gridStep)
+        {
+            Color gridColor = Color.FromArgb(80, 200, 150, 150);
+
+            // Линии по X (y=0)
+            for (int x = -GridSize; x <= GridSize; x += gridStep)
+            {
+                var p1 = ProjectTo2D(x, 0, -GridSize);
+                var p2 = ProjectTo2D(x, 0, GridSize);
+                
+                var line = new Line
+                {
+                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                    Stroke = new SolidColorBrush(gridColor),
+                    StrokeThickness = 0.5
+                };
+                canvas.Children.Add(line);
+            }
+
+            // Линии по Z (y=0)
+            for (int z = -GridSize; z <= GridSize; z += gridStep)
+            {
+                var p1 = ProjectTo2D(-GridSize, 0, z);
+                var p2 = ProjectTo2D(GridSize, 0, z);
+                
+                var line = new Line
+                {
+                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                    Stroke = new SolidColorBrush(gridColor),
+                    StrokeThickness = 0.5
+                };
+                canvas.Children.Add(line);
+
+                // Подписи оси Z
+                if (z % (gridStep * 2) == 0 && z != 0)
+                {
+                    var labelPos = ProjectTo2D(0, 0, z);
+                    DrawLabel(canvas, z.ToString(), Brushes.Black, labelPos, centerX, centerY, horizontal: false);
+                }
+            }
+        }
+
+        private void DrawYZPlane(Canvas canvas, double centerX, double centerY, int gridStep)
+        {
+            Color gridColor = Color.FromArgb(80, 150, 200, 150);
+
+            // Линии по Y (x=0)
+            for (int y = -GridSize; y <= GridSize; y += gridStep)
+            {
+                var p1 = ProjectTo2D(0, y, -GridSize);
+                var p2 = ProjectTo2D(0, y, GridSize);
+                
+                var line = new Line
+                {
+                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                    Stroke = new SolidColorBrush(gridColor),
+                    StrokeThickness = 0.5
+                };
+                canvas.Children.Add(line);
+            }
+
+            // Линии по Z (x=0)
+            for (int z = -GridSize; z <= GridSize; z += gridStep)
+            {
+                var p1 = ProjectTo2D(0, -GridSize, z);
+                var p2 = ProjectTo2D(0, GridSize, z);
+                
+                var line = new Line
+                {
+                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
+                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
+                    Stroke = new SolidColorBrush(gridColor),
+                    StrokeThickness = 0.5
+                };
+                canvas.Children.Add(line);
+            }
+        }
+
+        private void DrawLabel(Canvas canvas, string text, IBrush color, Point position, 
+                             double centerX, double centerY, bool horizontal = true)
+        {
+            var textBlock = new TextBlock
+            {
+                Text = text,
+                Foreground = color,
+                FontSize = 10,
+                FontWeight = FontWeight.Bold
+            };
+
+            if (horizontal)
+            {
+                Canvas.SetLeft(textBlock, position.X + centerX - 5);
+                Canvas.SetTop(textBlock, position.Y + centerY + 2);
+            }
+            else
+            {
+                Canvas.SetLeft(textBlock, position.X + centerX + 2);
+                Canvas.SetTop(textBlock, position.Y + centerY - 6);
+            }
+
+            canvas.Children.Add(textBlock);
+        }
+
+        private void DrawFunctionSurface(Canvas canvas, double centerX, double centerY)
+        {
+            double step = 0.5;
+            Color surfaceColor = Color.FromArgb(180, 0, 120, 215);
+
+            for (double x = -GridSize; x < GridSize; x += step)
+            {
+                for (double y = -GridSize; y < GridSize; y += step)
+                {
+                    // Получаем четыре точки квадрата
+                    double x1 = x;
+                    double y1 = y;
+                    double x2 = x + step;
+                    double y2 = y + step;
+
+                    // Вычисляем z для каждой точки
+                    double z1 = Function(x1, y1);
+                    double z2 = Function(x2, y1);
+                    double z3 = Function(x2, y2);
+                    double z4 = Function(x1, y2);
+
+                    // Собираем все точки квадрата
+                    List<Point3D> square = new List<Point3D>
+                    {
+                        new Point3D(x1, y1, z1),
+                        new Point3D(x2, y1, z2),
+                        new Point3D(x2, y2, z3),
+                        new Point3D(x1, y2, z4)
+                    };
+
+                    // Проверяем, находится ли хотя бы одна точка внутри куба
+                    bool hasVisiblePoints = square.Any(p => 
+                        p.Z >= -GridSize && p.Z <= GridSize);
+
+                    if (!hasVisiblePoints)
+                        continue;
+
+                    // Проецируем точки в 2D
+                    var p1 = ProjectTo2D(x1, y1, z1);
+                    var p2 = ProjectTo2D(x2, y1, z2);
+                    var p3 = ProjectTo2D(x2, y2, z3);
+                    var p4 = ProjectTo2D(x1, y2, z4);
+
+                    // Рисуем два треугольника
+                    var triangle1 = new Polygon
+                    {
+                        Points = new Points {
+                            new Point(p1.X + centerX, p1.Y + centerY),
+                            new Point(p2.X + centerX, p2.Y + centerY),
+                            new Point(p3.X + centerX, p3.Y + centerY)
+                        },
+                        Fill = new SolidColorBrush(surfaceColor),
+                        Stroke = Brushes.Transparent
+                    };
+
+                    var triangle2 = new Polygon
+                    {
+                        Points = new Points {
+                            new Point(p1.X + centerX, p1.Y + centerY),
+                            new Point(p3.X + centerX, p3.Y + centerY),
+                            new Point(p4.X + centerX, p4.Y + centerY)
+                        },
+                        Fill = new SolidColorBrush(surfaceColor),
+                        Stroke = Brushes.Transparent
+                    };
+
+                    canvas.Children.Add(triangle1);
+                    canvas.Children.Add(triangle2);
+                }
+            }
+        }
+
+        // private List<Point3D> ClipPolygon(List<Point3D> polygon)
+        // {
+        //     // Реализация алгоритма Сазерленда-Ходжмана для отсечения полигона
+        //     List<Point3D> output = new List<Point3D>(polygon);
+
+        //     // Отсекаем по каждой из 6 граней куба
+        //     output = ClipAgainstPlane(output, new Point3D(1, 0, 0), -GridSize);  // Левая грань X
+        //     output = ClipAgainstPlane(output, new Point3D(-1, 0, 0), -GridSize); // Правая грань X
+        //     output = ClipAgainstPlane(output, new Point3D(0, 1, 0), -GridSize);  // Передняя грань Y
+        //     output = ClipAgainstPlane(output, new Point3D(0, -1, 0), -GridSize); // Задняя грань Y
+        //     output = ClipAgainstPlane(output, new Point3D(0, 0, 1), -GridSize);  // Нижняя грань Z
+        //     output = ClipAgainstPlane(output, new Point3D(0, 0, -1), -GridSize); // Верхняя грань Z
+
+        //     return output;
+        // }
+
+        // private List<Point3D> ClipAgainstPlane(List<Point3D> polygon, Point3D planeNormal, double planeDistance)
+        // {
+        //     List<Point3D> output = new List<Point3D>();
+
+        //     if (polygon.Count == 0)
+        //         return output;
+
+        //     Point3D prevPoint = polygon.Last();
+        //     double prevDot = Point3D.Dot(prevPoint, planeNormal) + planeDistance;
+
+        //     foreach (Point3D currentPoint in polygon)
+        //     {
+        //         double currentDot = Point3D.Dot(currentPoint, planeNormal) + planeDistance;
+
+        //         if (currentDot * prevDot < 0)
+        //         {
+        //             // Находим точку пересечения
+        //             double t = prevDot / (prevDot - currentDot);
+        //             Point3D intersection = prevPoint + t * (currentPoint - prevPoint);
+        //             output.Add(intersection);
+        //         }
+
+        //         if (currentDot >= 0)
+        //         {
+        //             output.Add(currentPoint);
+        //         }
+
+        //         prevPoint = currentPoint;
+        //         prevDot = currentDot;
+        //     }
+
+        //     return output;
+        // }
+
+        private struct Point3D
+        {
+            public double X { get; }
+            public double Y { get; }
+            public double Z { get; }
+
+            public Point3D(double x, double y, double z)
+            {
+                X = x;
+                Y = y;
+                Z = z;
+            }
+        }
+
+        private double Function(double x, double y)
+        {
+            // Функция z = x + y (z - вертикальная ось)
+            return x*x + y*y;
+        }
+
+        private TextBlock CreateLabel(string text, IBrush color, double fontSize)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                Foreground = color,
+                FontSize = fontSize,
+                FontWeight = FontWeight.Normal
+            };
+        }
+
+        private void DrawAxis(Canvas canvas, 
+                            double x1, double y1, double z1,
+                            double x2, double y2, double z2,
+                            IBrush color, string label,
+                            double centerX, double centerY)
+        {
+            var start = ProjectTo2D(x1, y1, z1);
+            var end = ProjectTo2D(x2, y2, z2);
+            
+            var line = new Line
+            {
+                StartPoint = new Point(start.X + centerX, start.Y + centerY),
+                EndPoint = new Point(end.X + centerX, end.Y + centerY),
+                Stroke = color,
+                StrokeThickness = 2
+            };
+            canvas.Children.Add(line);
+
+            // Добавляем подпись оси
+            var textBlock = CreateLabel(label, color, 16);
+            textBlock.FontWeight = FontWeight.Bold;
+            
+            canvas.Children.Add(textBlock);
+            Canvas.SetLeft(textBlock, end.X + centerX + (label == "X" ? 10 : 0));
+            Canvas.SetTop(textBlock, end.Y + centerY - (label == "Z" ? 20 : 0));
+        }
+
+        private Point ProjectTo2D(double x, double y, double z)
+        {
+            // Изометрическая проекция с Z как вертикальной осью (направленной вверх)
+            double x2d = x * Math.Cos(_angleY) + y * Math.Sin(_angleY);
+            double y2d = x * Math.Sin(_angleX) * Math.Sin(_angleY) - 
+                         y * Math.Sin(_angleX) * Math.Cos(_angleY) - 
+                         z * Math.Cos(_angleX);
+            
+            return new Point(x2d * _cellSize, y2d * _cellSize);
+        }
+    }
+}
