@@ -9,6 +9,8 @@ using Avalonia.Interactivity;
 using System.Linq;
 using GoodbyeDiplom.ViewModels;
 using GoodbyeDiplom.Views;
+using ReactiveUI;
+using Avalonia.Threading;
 namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
@@ -31,6 +33,7 @@ namespace GoodbyeDiplom.Views
             Height = 600;
             var vm = new MainWindowViewModel();
             DataContext = vm;
+            // В конструкторе MainWindow
             canvas = this.FindControl<Canvas>("MainCanvas");
             this.PointerPressed += OnPointerPressed;
             this.PointerReleased += OnPointerReleased;
@@ -38,8 +41,46 @@ namespace GoodbyeDiplom.Views
             this.PointerWheelChanged += OnPointerWheelChanged;
             this.SizeChanged += OnSizeChanged;
             PointerMoved += (s, e) => UpdateMouseCoordinates(e);
+            var button = this.FindControl<Button>("CreateFunction");
+            button.Click += (s, e) => 
+            {
+                if (DataContext is MainWindowViewModel vm)
+                {
+                    vm.UpdateFunction();
+                    UpdateGrid();
+                }
+            };
         }
+        private void UpdateGrid()
+        {
+            canvas.Children.Clear();
+            _surfaceTriangles.Clear();
+            double centerX = (Bounds.Width - 200) / 2;
+            double centerY = Bounds.Height / 2;
 
+            // Фиксированный размер для куба, осей и СЕТКИ
+            double fixedCellSize = Math.Min(Bounds.Width - 200, Bounds.Height) / 20;
+            
+            // Масштабируемый размер только для функции и числовых подписей
+            //double gridCellSize = fixedCellSize / _zoom;
+
+            // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
+            double DynamicStep = DynStepCalc(GridSize);
+            
+            // 1. Рисуем кубический каркас (статично)
+            DrawCubeFrame(centerX, centerY, fixedCellSize);
+            
+            // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
+            DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
+            
+            // 3. Рисуем поверхность функции (масштабируется)
+            DrawFunctionSurface(centerX, centerY, fixedCellSize);
+
+            // 4. Рисуем оси координат (статично)
+            DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
+            DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
+            DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+        }
         private void UpdateMouseCoordinates(PointerEventArgs e)
         {
             if (DataContext is not MainWindowViewModel vm) return;
@@ -326,41 +367,6 @@ namespace GoodbyeDiplom.Views
             GridSize = Math.Clamp(GridSize, 0.01, 50000);
             UpdateGrid();
         }
-
-        private void UpdateGrid()
-        {
-            DataContext = new MainWindowViewModel();
-            //if (Content is not Canvas canvas) return;
-
-            canvas.Children.Clear();
-            _surfaceTriangles.Clear();
-            
-            double centerX = Bounds.Width / 2;
-            double centerY = Bounds.Height / 2;
-
-            // Фиксированный размер для куба, осей и СЕТКИ
-            double fixedCellSize = Math.Min(Bounds.Width, Bounds.Height) / 20;
-            
-            // Масштабируемый размер только для функции и числовых подписей
-            //double gridCellSize = fixedCellSize / _zoom;
-
-            // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
-            double DynamicStep = DynStepCalc(GridSize);
-            
-            // 1. Рисуем кубический каркас (статично)
-            DrawCubeFrame(centerX, centerY, fixedCellSize);
-            
-            // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
-            DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
-            
-            // 3. Рисуем поверхность функции (масштабируется)
-            DrawFunctionSurface(centerX, centerY, fixedCellSize);
-
-            // 4. Рисуем оси координат (статично)
-            DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
-            DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
-            DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
-        }
         private double DynStepCalc(double gridSize)
         {
             // Определяем текущий "уровень масштаба" (0, 1, 2, 0, 1, 2...)
@@ -500,6 +506,8 @@ namespace GoodbyeDiplom.Views
 
         private void DrawFunctionSurface(double centerX, double centerY, double cellSize)
         {
+            if (!(DataContext is MainWindowViewModel vm)) return;
+
             double step = GridSize / 10;
             Color surfaceColor = Color.FromArgb(180, 0, 120, 215);
 
@@ -517,10 +525,10 @@ namespace GoodbyeDiplom.Views
                     double y2 = (y + step) * scaleFactor;
                     
                     // Вычисляем z для каждой точки
-                    double z1 = Math.Clamp(Function(x, y), -GridSize, GridSize) * scaleFactor;
-                    double z2 = Math.Clamp(Function(x + step, y), -GridSize, GridSize) * scaleFactor;
-                    double z3 = Math.Clamp(Function(x + step, y + step), -GridSize, GridSize) * scaleFactor;
-                    double z4 = Math.Clamp(Function(x, y + step), -GridSize, GridSize) * scaleFactor;
+                    double z1 = Math.Clamp(vm.CalculateFunction(x, y), -GridSize, GridSize) * scaleFactor;
+                    double z2 = Math.Clamp(vm.CalculateFunction(x + step, y), -GridSize, GridSize) * scaleFactor;
+                    double z3 = Math.Clamp(vm.CalculateFunction(x + step, y + step), -GridSize, GridSize) * scaleFactor;
+                    double z4 = Math.Clamp(vm.CalculateFunction(x, y + step), -GridSize, GridSize) * scaleFactor;
 
                     // Проецируем точки в 2D
                     var p1 = ProjectTo2D(x1, y1, z1, cellSize);
