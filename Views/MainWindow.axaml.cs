@@ -13,7 +13,7 @@ namespace GoodbyeDiplom.Views
     public partial class MainWindow : Window
     {
         private double GridSize = 5;
-        private const int CubeSize = 8;
+        private const int CubeSize = 6;
         private double _cellSize = 40;
         private Point _lastMousePosition;
         private double _angleX = 35 * Math.PI / 180;
@@ -99,13 +99,13 @@ namespace GoodbyeDiplom.Views
             //double gridCellSize = fixedCellSize / _zoom;
 
             // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
-            int dynamicGridStep = (int)Math.Max(1, 4);
+            double DynamicStep = DynStepCalc(GridSize);
             
             // 1. Рисуем кубический каркас (статично)
             DrawCubeFrame(canvas, centerX, centerY, fixedCellSize);
             
             // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
-            DrawXYPlane(canvas, centerX, centerY, dynamicGridStep, fixedCellSize); // <- fixedCellSize
+            DrawXYPlane(canvas, centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
             
             // 3. Рисуем поверхность функции (масштабируется)
             DrawFunctionSurface(canvas, centerX, centerY, fixedCellSize);
@@ -114,6 +114,14 @@ namespace GoodbyeDiplom.Views
             DrawAxis(canvas, -CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
             DrawAxis(canvas, 0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
             DrawAxis(canvas, 0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+        }
+        private double DynStepCalc(double gridSize)
+        {
+            // Определяем текущий "уровень масштаба" (0, 1, 2, 0, 1, 2...)
+            int scaleLevel = (int)(Math.Log(gridSize, 2)) % 2;
+            
+            // Возвращаем шаг: 2^1=2, 2^2=4, 2^3=8, затем снова 2...
+            return Math.Pow(2, scaleLevel + 1);
         }
         private void DrawCubeFrame(Canvas canvas, double centerX, double centerY, double cellSize)
         {
@@ -173,7 +181,7 @@ namespace GoodbyeDiplom.Views
         private void DrawXYPlane(Canvas canvas, double centerX, double centerY, double gridStep, double cellSize)
         {
             Color gridColor = Color.FromArgb(80, 150, 150, 150);
-            gridStep = (GridSize * 2)/4;
+            gridStep = GridSize/gridStep;
             // Линии по X (z=0)
             for (double x = -GridSize; x <= GridSize; x += gridStep)
             {
@@ -193,7 +201,7 @@ namespace GoodbyeDiplom.Views
 
                 // Подписи осей масштабируются (используем gridCellSize)
                 var labelPos = ProjectTo2D(x_norm, -0.1, 0, cellSize); // Масштабируем!
-                DrawLabel(canvas, (x).ToString(), Brushes.Black, 
+                DrawLabel(canvas, (x).ToString("0.##"), Brushes.Black, 
                 labelPos, centerX, centerY, horizontal: true);
             }
 
@@ -214,7 +222,7 @@ namespace GoodbyeDiplom.Views
                 canvas.Children.Add(line);
                 // Подписи оси Y
                 var labelPos = ProjectTo2D(0, y_norm, 0, cellSize);
-                DrawLabel(canvas, y.ToString(), Brushes.Black, labelPos, 
+                DrawLabel(canvas, y.ToString("0.##"), Brushes.Black, labelPos, 
                 centerX, centerY, horizontal: false);
             }
 
@@ -319,7 +327,7 @@ namespace GoodbyeDiplom.Views
 
         private double Function(double x, double y)
         {
-            return x;
+            return Math.Exp(x) + Math.Exp(y);
         }
 
         private TextBlock CreateLabel(string text, IBrush color, double fontSize)
