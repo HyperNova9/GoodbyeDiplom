@@ -12,15 +12,15 @@ namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
     {
-        private const int GridSize = 10;
+        private double GridSize = 5;
+        private const int CubeSize = 8;
         private double _cellSize = 40;
         private Point _lastMousePosition;
         private double _angleX = 35 * Math.PI / 180;
         private double _angleY = -45 * Math.PI / 180;
         private bool _isDragging;
-        private double _zoom = 1.0;
+        //private double _zoom = 1.0;
         private List<Shape> _surfaceTriangles = new List<Shape>();
-
         public MainWindow()
         {
             Title = "3D Function Surface (Z Vertical)";
@@ -76,8 +76,9 @@ namespace GoodbyeDiplom.Views
         {
             // Инвертированное масштабирование (скролл вперёд - приближение)
             var zoomFactor = e.Delta.Y > 0 ? 0.9 : 1.1;
-            _zoom *= zoomFactor;
-            _zoom = Math.Clamp(_zoom, 0.2, 5.0);
+            GridSize *= zoomFactor;
+            // _zoom = Math.Clamp(_zoom, 0.2, 5.0);
+            GridSize = Math.Clamp(GridSize, 0.01, 50000);
             UpdateGrid();
         }
 
@@ -95,26 +96,24 @@ namespace GoodbyeDiplom.Views
             double fixedCellSize = Math.Min(Bounds.Width, Bounds.Height) / 20;
             
             // Масштабируемый размер только для функции и числовых подписей
-            double gridCellSize = fixedCellSize / _zoom;
+            //double gridCellSize = fixedCellSize / _zoom;
 
             // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
-            int dynamicGridStep = (int)Math.Max(1, Math.Round(2 * _zoom));
+            int dynamicGridStep = (int)Math.Max(1, 4);
             
             // 1. Рисуем кубический каркас (статично)
             DrawCubeFrame(canvas, centerX, centerY, fixedCellSize);
             
             // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
             DrawXYPlane(canvas, centerX, centerY, dynamicGridStep, fixedCellSize); // <- fixedCellSize
-            //DrawXZPlane(canvas, centerX, centerY, dynamicGridStep, fixedCellSize); // <- fixedCellSize
-            //DrawYZPlane(canvas, centerX, centerY, dynamicGridStep, fixedCellSize); // <- fixedCellSize
             
             // 3. Рисуем поверхность функции (масштабируется)
-            DrawFunctionSurface(canvas, centerX, centerY, gridCellSize);
+            DrawFunctionSurface(canvas, centerX, centerY, fixedCellSize);
 
             // 4. Рисуем оси координат (статично)
-            DrawAxis(canvas, -GridSize, 0, 0, GridSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
-            DrawAxis(canvas, 0, -GridSize, 0, 0, GridSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
-            DrawAxis(canvas, 0, 0, -GridSize*2, 0, 0, GridSize*2, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+            DrawAxis(canvas, -CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
+            DrawAxis(canvas, 0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
+            DrawAxis(canvas, 0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
         }
         private void DrawCubeFrame(Canvas canvas, double centerX, double centerY, double cellSize)
         {
@@ -122,33 +121,33 @@ namespace GoodbyeDiplom.Views
             double thickness = 1.5;
 
             // Нижняя грань (z = -GridSize)
-            DrawFrameLine(canvas, -GridSize, -GridSize, -GridSize, GridSize, -GridSize, -GridSize
+            DrawFrameLine(canvas, -CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, GridSize, -GridSize, -GridSize, GridSize, GridSize, -GridSize
+            DrawFrameLine(canvas, CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, GridSize, GridSize, -GridSize, -GridSize, GridSize, -GridSize
+            DrawFrameLine(canvas, CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, -GridSize, GridSize, -GridSize, -GridSize, -GridSize, -GridSize
+            DrawFrameLine(canvas, -CubeSize, CubeSize, -CubeSize, -CubeSize, -CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
 
-            // Верхняя грань (z = GridSize)
-            DrawFrameLine(canvas, -GridSize, -GridSize, GridSize, GridSize, -GridSize, GridSize
+            // Верхняя грань (z = CubeSize)
+            DrawFrameLine(canvas, -CubeSize, -CubeSize, CubeSize, CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, GridSize, -GridSize, GridSize, GridSize, GridSize, GridSize
+            DrawFrameLine(canvas, CubeSize, -CubeSize, CubeSize, CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, GridSize, GridSize, GridSize, -GridSize, GridSize, GridSize
+            DrawFrameLine(canvas, CubeSize, CubeSize, CubeSize, -CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, -GridSize, GridSize, GridSize, -GridSize, -GridSize, GridSize
+            DrawFrameLine(canvas, -CubeSize, CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
 
             // Вертикальные рёбра
-            DrawFrameLine(canvas, -GridSize, -GridSize, -GridSize, -GridSize, -GridSize, GridSize
+            DrawFrameLine(canvas, -CubeSize, -CubeSize, -CubeSize, -CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, GridSize, -GridSize, -GridSize, GridSize, -GridSize, GridSize
+            DrawFrameLine(canvas, CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, GridSize, GridSize, -GridSize, GridSize, GridSize, GridSize
+            DrawFrameLine(canvas, CubeSize, CubeSize, -CubeSize, CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, -GridSize, GridSize, -GridSize, -GridSize, GridSize, GridSize
+            DrawFrameLine(canvas, -CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
         }
 
@@ -171,16 +170,17 @@ namespace GoodbyeDiplom.Views
             canvas.Children.Add(line);
         }
 
-        private void DrawXYPlane(Canvas canvas, double centerX, double centerY, int gridStep, double cellSize)
+        private void DrawXYPlane(Canvas canvas, double centerX, double centerY, double gridStep, double cellSize)
         {
             Color gridColor = Color.FromArgb(80, 150, 150, 150);
-
+            gridStep = (GridSize * 2)/4;
             // Линии по X (z=0)
-            for (int x = -GridSize; x <= GridSize; x += gridStep)
+            for (double x = -GridSize; x <= GridSize; x += gridStep)
             {
+                var x_norm = x/GridSize * CubeSize;
                  // Линии рисуем в фиксированном масштабе
-                var p1 = ProjectTo2D(x, -GridSize, 0, cellSize);
-                var p2 = ProjectTo2D(x, GridSize, 0, cellSize);
+                var p1 = ProjectTo2D(x_norm, -CubeSize, 0, cellSize);
+                var p2 = ProjectTo2D(x_norm, CubeSize, 0, cellSize);
                 
                 var line = new Line
                 {
@@ -192,19 +192,17 @@ namespace GoodbyeDiplom.Views
                 canvas.Children.Add(line);
 
                 // Подписи осей масштабируются (используем gridCellSize)
-                if (x % (gridStep * 2) == 0 && x != 0)
-                {
-                    var labelPos = ProjectTo2D(x, -0.1, 0, cellSize / _zoom); // Масштабируем!
-                    DrawLabel(canvas, (x * _zoom).ToString("0"), Brushes.Black, 
-                            labelPos, centerX, centerY, horizontal: true);
-                }
+                var labelPos = ProjectTo2D(x_norm, -0.1, 0, cellSize); // Масштабируем!
+                DrawLabel(canvas, (x).ToString(), Brushes.Black, 
+                labelPos, centerX, centerY, horizontal: true);
             }
 
             // Линии по Y (z=0)
-            for (int y = -GridSize; y <= GridSize; y += gridStep)
+            for (double y = -GridSize; y <= GridSize; y += gridStep)
             {
-                var p1 = ProjectTo2D(-GridSize, y, 0, cellSize);
-                var p2 = ProjectTo2D(GridSize, y, 0, cellSize);
+                var y_norm = y/GridSize * CubeSize;
+                var p1 = ProjectTo2D(-CubeSize, y_norm, 0, cellSize);
+                var p2 = ProjectTo2D(CubeSize, y_norm, 0, cellSize);
                 
                 var line = new Line
                 {
@@ -214,97 +212,13 @@ namespace GoodbyeDiplom.Views
                     StrokeThickness = 0.5
                 };
                 canvas.Children.Add(line);
-
                 // Подписи оси Y
-                if (y % (gridStep * 2) == 0 && y != 0)
-                {
-                    var labelPos = ProjectTo2D(0, y, 0, cellSize / _zoom);
-                    DrawLabel(canvas, y.ToString(), Brushes.Black, labelPos, centerX, centerY, horizontal: false);
-                }
+                var labelPos = ProjectTo2D(0, y_norm, 0, cellSize);
+                DrawLabel(canvas, y.ToString(), Brushes.Black, labelPos, 
+                centerX, centerY, horizontal: false);
             }
+
         }
-
-        private void DrawXZPlane(Canvas canvas, double centerX, double centerY, int gridStep, double cellSize)
-        {
-            Color gridColor = Color.FromArgb(80, 200, 150, 150);
-
-            // Линии по X (y=0)
-            for (int x = -GridSize; x <= GridSize; x += gridStep)
-            {
-                var p1 = ProjectTo2D(x, 0, -GridSize, cellSize);
-                var p2 = ProjectTo2D(x, 0, GridSize, cellSize);
-                
-                var line = new Line
-                {
-                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
-                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
-                    Stroke = new SolidColorBrush(gridColor),
-                    StrokeThickness = 0.5
-                };
-                canvas.Children.Add(line);
-            }
-
-            // Линии по Z (y=0)
-            for (int z = -GridSize; z <= GridSize; z += gridStep)
-            {
-                var p1 = ProjectTo2D(-GridSize, 0, z, cellSize);
-                var p2 = ProjectTo2D(GridSize, 0, z, cellSize);
-                
-                var line = new Line
-                {
-                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
-                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
-                    Stroke = new SolidColorBrush(gridColor),
-                    StrokeThickness = 0.5
-                };
-                canvas.Children.Add(line);
-
-                // Подписи оси Z
-                if (z % (gridStep * 2) == 0 && z != 0)
-                {
-                    var labelPos = ProjectTo2D(0, 0, z, cellSize);
-                    DrawLabel(canvas, z.ToString(), Brushes.Black, labelPos, centerX, centerY, horizontal: false);
-                }
-            }
-        }
-
-        private void DrawYZPlane(Canvas canvas, double centerX, double centerY, int gridStep, double cellSize)
-        {
-            Color gridColor = Color.FromArgb(80, 150, 200, 150);
-
-            // Линии по Y (x=0)
-            for (int y = -GridSize; y <= GridSize; y += gridStep)
-            {
-                var p1 = ProjectTo2D(0, y, -GridSize, cellSize);
-                var p2 = ProjectTo2D(0, y, GridSize, cellSize);
-                
-                var line = new Line
-                {
-                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
-                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
-                    Stroke = new SolidColorBrush(gridColor),
-                    StrokeThickness = 0.5
-                };
-                canvas.Children.Add(line);
-            }
-
-            // Линии по Z (x=0)
-            for (int z = -GridSize; z <= GridSize; z += gridStep)
-            {
-                var p1 = ProjectTo2D(0, -GridSize, z, cellSize);
-                var p2 = ProjectTo2D(0, GridSize, z, cellSize);
-                
-                var line = new Line
-                {
-                    StartPoint = new Point(p1.X + centerX, p1.Y + centerY),
-                    EndPoint = new Point(p2.X + centerX, p2.Y + centerY),
-                    Stroke = new SolidColorBrush(gridColor),
-                    StrokeThickness = 0.5
-                };
-                canvas.Children.Add(line);
-            }
-        }
-
         private void DrawLabel(Canvas canvas, string text, IBrush color, Point position, 
                              double centerX, double centerY, bool horizontal = true)
         {
@@ -324,7 +238,7 @@ namespace GoodbyeDiplom.Views
             else
             {
                 Canvas.SetLeft(textBlock, position.X + centerX + 2);
-                Canvas.SetTop(textBlock, position.Y + centerY - 6);
+                Canvas.SetTop(textBlock, position.Y + centerY - 5);
             }
 
             canvas.Children.Add(textBlock);
@@ -332,40 +246,27 @@ namespace GoodbyeDiplom.Views
 
         private void DrawFunctionSurface(Canvas canvas, double centerX, double centerY, double cellSize)
         {
-            double step = 0.5;
+            double step = GridSize / 10;
             Color surfaceColor = Color.FromArgb(180, 0, 120, 215);
+
+            // Масштабируем размер функции в соответствии с GridSize
+            double scaleFactor = CubeSize / GridSize;
 
             for (double x = -GridSize; x < GridSize; x += step)
             {
                 for (double y = -GridSize; y < GridSize; y += step)
                 {
-                    // Получаем четыре точки квадрата
-                    double x1 = x;
-                    double y1 = y;
-                    double x2 = x + step;
-                    double y2 = y + step;
-
+                    // Координаты в масштабе функции
+                    double x1 = x * scaleFactor;
+                    double y1 = y * scaleFactor;
+                    double x2 = (x + step) * scaleFactor;
+                    double y2 = (y + step) * scaleFactor;
+                    
                     // Вычисляем z для каждой точки
-                    double z1 = Function(x1, y1);
-                    double z2 = Function(x2, y1);
-                    double z3 = Function(x2, y2);
-                    double z4 = Function(x1, y2);
-
-                    // Собираем все точки квадрата
-                    List<Point3D> square = new List<Point3D>
-                    {
-                        new Point3D(x1, y1, z1),
-                        new Point3D(x2, y1, z2),
-                        new Point3D(x2, y2, z3),
-                        new Point3D(x1, y2, z4)
-                    };
-
-                    // Проверяем, находится ли хотя бы одна точка внутри куба
-                    bool hasVisiblePoints = square.Any(p => 
-                        p.Z >= -GridSize && p.Z <= GridSize);
-
-                    if (!hasVisiblePoints)
-                        continue;
+                    double z1 = Math.Clamp(Function(x, y), -GridSize, GridSize) * scaleFactor;
+                    double z2 = Math.Clamp(Function(x + step, y), -GridSize, GridSize) * scaleFactor;
+                    double z3 = Math.Clamp(Function(x + step, y + step), -GridSize, GridSize) * scaleFactor;
+                    double z4 = Math.Clamp(Function(x, y + step), -GridSize, GridSize) * scaleFactor;
 
                     // Проецируем точки в 2D
                     var p1 = ProjectTo2D(x1, y1, z1, cellSize);
@@ -416,13 +317,9 @@ namespace GoodbyeDiplom.Views
             }
         }
 
-        private double Function(double _x, double _y)
+        private double Function(double x, double y)
         {
-            double x = _x * _zoom;
-            double y = _y * _zoom;
-            
-            // Функция z = x + y (z - вертикальная ось)
-            return x*x + y*y;
+            return x;
         }
 
         private TextBlock CreateLabel(string text, IBrush color, double fontSize)
