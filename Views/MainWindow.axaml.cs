@@ -510,7 +510,7 @@ namespace GoodbyeDiplom.Views
 
             double step = GridSize / 10;
             Color surfaceColor = Color.FromArgb(180, 0, 120, 215);
-
+            double discontinuityThreshold = GridSize * 2;
             // Масштабируем размер функции в соответствии с GridSize
             double scaleFactor = CubeSize / GridSize;
 
@@ -523,20 +523,30 @@ namespace GoodbyeDiplom.Views
                     double y1 = y * scaleFactor;
                     double x2 = (x + step) * scaleFactor;
                     double y2 = (y + step) * scaleFactor;
-                    
+
+                    double z1 = SafeCalculate(vm, x, y, discontinuityThreshold);
+                    double z2 = SafeCalculate(vm, x + step, y, discontinuityThreshold);
+                    double z3 = SafeCalculate(vm, x + step, y + step, discontinuityThreshold);
+                    double z4 = SafeCalculate(vm, x, y + step, discontinuityThreshold);
+
+                    // Пропускаем полигон, если обнаружен разрыв
+                    if (double.IsInfinity(z1)) continue;
+                    if (double.IsInfinity(z2)) continue;
+                    if (double.IsInfinity(z3)) continue;
+                    if (double.IsInfinity(z4)) continue;
+
                     // Вычисляем z для каждой точки
-                    double z1 = Math.Clamp(vm.CalculateFunction(x, y), -GridSize, GridSize) * scaleFactor;
-                    double z2 = Math.Clamp(vm.CalculateFunction(x + step, y), -GridSize, GridSize) * scaleFactor;
-                    double z3 = Math.Clamp(vm.CalculateFunction(x + step, y + step), -GridSize, GridSize) * scaleFactor;
-                    double z4 = Math.Clamp(vm.CalculateFunction(x, y + step), -GridSize, GridSize) * scaleFactor;
+                    z1 = Math.Clamp(z1, -GridSize, GridSize) * scaleFactor;
+                    z2 = Math.Clamp(z2, -GridSize, GridSize) * scaleFactor;
+                    z3 = Math.Clamp(z3, -GridSize, GridSize) * scaleFactor;
+                    z4 = Math.Clamp(z4, -GridSize, GridSize) * scaleFactor;
 
                     // Проецируем точки в 2D
                     var p1 = ProjectTo2D(x1, y1, z1, cellSize);
                     var p2 = ProjectTo2D(x2, y1, z2, cellSize);
                     var p3 = ProjectTo2D(x2, y2, z3, cellSize);
                     var p4 = ProjectTo2D(x1, y2, z4, cellSize);
-
-                    // Рисуем два треугольника
+                    //Обработка разрывов
                     var triangle1 = new Polygon
                     {
                         Points = new Points {
@@ -564,7 +574,39 @@ namespace GoodbyeDiplom.Views
                 }
             }
         }
+        private double SafeCalculate(MainWindowViewModel vm, double x, double y, double threshold)
+        {
+            try
+            {
+                double result = vm.CalculateFunction(x, y);
+                
+                // Проверяем на слишком большие значения (разрывы)
+                if (double.IsInfinity(result) || Math.Abs(result) > threshold)
+                    return double.PositiveInfinity;
+                    
+                return result;
+            }
+            catch
+            {
+                return double.PositiveInfinity;
+            }
+        }
+        private bool ShouldSkipPolygon(Point p1, Point p2, Point p3, Point p4, double maxDistance)
+        {
+            // Проверяем расстояния между соседними точками
+            if (DistanceBetween(p1, p2) > maxDistance) return true;
+            if (DistanceBetween(p2, p3) > maxDistance) return true;
+            if (DistanceBetween(p3, p4) > maxDistance) return true;
+            if (DistanceBetween(p4, p1) > maxDistance) return true;
+            if (DistanceBetween(p1, p3) > maxDistance) return true;
+            
+            return false;
+        }
 
+        private double DistanceBetween(Point a, Point b)
+        {
+            return Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
+        }
         private struct Point3D
         {
             public double X { get; }
