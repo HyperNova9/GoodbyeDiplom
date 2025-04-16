@@ -7,7 +7,8 @@ using System;
 using System.Collections.Generic;
 using Avalonia.Interactivity;
 using System.Linq;
-
+using GoodbyeDiplom.ViewModels;
+using GoodbyeDiplom.Views;
 namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
@@ -19,22 +20,262 @@ namespace GoodbyeDiplom.Views
         private double _angleX = 35 * Math.PI / 180;
         private double _angleY = -45 * Math.PI / 180;
         private bool _isDragging;
+        Canvas canvas;
         //private double _zoom = 1.0;
         private List<Shape> _surfaceTriangles = new List<Shape>();
         public MainWindow()
         {
+            InitializeComponent();
             Title = "3D Function Surface (Z Vertical)";
             Width = 800;
             Height = 600;
-            
-            this.Content = new Canvas();
+            var vm = new MainWindowViewModel();
+            DataContext = vm;
+            canvas = this.FindControl<Canvas>("MainCanvas");
             this.PointerPressed += OnPointerPressed;
             this.PointerReleased += OnPointerReleased;
             this.PointerMoved += OnPointerMoved;
             this.PointerWheelChanged += OnPointerWheelChanged;
             this.SizeChanged += OnSizeChanged;
+            PointerMoved += (s, e) => UpdateMouseCoordinates(e);
         }
 
+        private void UpdateMouseCoordinates(PointerEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+
+            var position = e.GetPosition(canvas);
+            var centerX = canvas.Bounds.Width / 2;
+            var centerY = canvas.Bounds.Height / 2;
+            
+            var mouseX = position.X - centerX;
+            var mouseY = position.Y - centerY;
+
+            // Определяем ближайшую ось
+            var nearestAxis = GetNearestAxis(mouseX, mouseY, centerX, centerY);
+            
+            string xCoord = "—";
+            string yCoord = "—";
+            string zCoord = "—";
+
+            if (nearestAxis != null)
+            {
+                double value = GetAxisValue(mouseX, mouseY, nearestAxis, centerX, centerY);
+                string formattedValue = value.ToString("0.##");
+
+                switch (nearestAxis)
+                {
+                    case "X":
+                        xCoord = formattedValue;
+                        // Если мы на оси X, попробуем найти Z (вертикальная координата)
+                        zCoord = GetZValueOnXAxis(mouseX, mouseY, centerX, centerY, value);
+                        break;
+                    case "Y":
+                        yCoord = formattedValue;
+                        // Если мы на оси Y, попробуем найти Z (вертикальная координата)
+                        zCoord = GetZValueOnYAxis(mouseX, mouseY, centerX, centerY, value);
+                        break;
+                    case "Z":
+                        zCoord = formattedValue;
+                        break;
+                }
+            }
+
+            vm.GridCoordinates = $"X: {xCoord}, Y: {yCoord}, Z: {zCoord}";
+        }
+
+        private string GetZValueOnXAxis(double mouseX, double mouseY, double centerX, double centerY, double xValue)
+        {
+            // Проецируем точку на оси и смотрим высоту
+            double step = GridSize / 10;
+            double closestDist = double.MaxValue;
+            double closestZ = 0;
+            
+            for (double z = -GridSize; z <= GridSize; z += step)
+            {
+                var point = ProjectTo2D(
+                    xValue / GridSize * CubeSize, 
+                    0, 
+                    z / GridSize * CubeSize, 
+                    _cellSize);
+                
+                double dist = Math.Sqrt(Math.Pow(point.X - mouseX, 2) + Math.Pow(point.Y - mouseY, 2));
+                
+                if (dist < closestDist && dist < 20) // 20 пикселей - радиус поиска
+                {
+                    closestDist = dist;
+                    closestZ = z;
+                }
+            }
+            
+            return closestDist < 20 ? closestZ.ToString("0.##") : "—";
+        }
+
+        private string GetZValueOnYAxis(double mouseX, double mouseY, double centerX, double centerY, double yValue)
+        {
+            // Аналогично для оси Y
+            double step = GridSize / 10;
+            double closestDist = double.MaxValue;
+            double closestZ = 0;
+            
+            for (double z = -GridSize; z <= GridSize; z += step)
+            {
+                var point = ProjectTo2D(
+                    0, 
+                    yValue / GridSize * CubeSize, 
+                    z / GridSize * CubeSize, 
+                    _cellSize);
+                
+                double dist = Math.Sqrt(Math.Pow(point.X - mouseX, 2) + Math.Pow(point.Y - mouseY, 2));
+                
+                if (dist < closestDist && dist < 20)
+                {
+                    closestDist = dist;
+                    closestZ = z;
+                }
+            }
+            
+            return closestDist < 20 ? closestZ.ToString("0.##") : "—";
+        }
+                private double GetAxisValue(double mouseX, double mouseY, string axis, double centerX, double centerY)
+        {
+            // Преобразуем координаты мыши в значение на оси
+            double value = 0;
+            
+            switch (axis)
+            {
+                case "X":
+                    var xStart = ProjectTo2D(-CubeSize, 0, 0, _cellSize);
+                    var xEnd = ProjectTo2D(CubeSize, 0, 0, _cellSize);
+                    double t = GetInterpolationFactor(mouseX, mouseY, xStart.X, xStart.Y, xEnd.X, xEnd.Y);
+                    value = Lerp(-GridSize, GridSize, t);
+                    break;
+                    
+                case "Y":
+                    var yStart = ProjectTo2D(0, -CubeSize, 0, _cellSize);
+                    var yEnd = ProjectTo2D(0, CubeSize, 0, _cellSize);
+                    t = GetInterpolationFactor(mouseX, mouseY, yStart.X, yStart.Y, yEnd.X, yEnd.Y);
+                    value = Lerp(-GridSize, GridSize, t);
+                    break;
+                    
+                case "Z":
+                    var zStart = ProjectTo2D(0, 0, -CubeSize, _cellSize);
+                    var zEnd = ProjectTo2D(0, 0, CubeSize, _cellSize);
+                    t = GetInterpolationFactor(mouseX, mouseY, zStart.X, zStart.Y, zEnd.X, zEnd.Y);
+                    value = Lerp(-GridSize, GridSize, t);
+                    break;
+            }
+            
+            return value;
+        }
+        private string GetNearestAxis(double mouseX, double mouseY, double centerX, double centerY)
+        {
+            const double axisThreshold = 15; // Расстояние в пикселях для захвата оси
+            
+            // Создаем список осей с их параметрами
+            var axes = new List<(string Name, Point Start, Point End, IBrush Color)>
+            {
+                ("X", 
+                ProjectTo2D(-CubeSize, 0, 0, _cellSize), 
+                ProjectTo2D(CubeSize, 0, 0, _cellSize), 
+                Brushes.Red),
+                ("Y", 
+                ProjectTo2D(0, -CubeSize, 0, _cellSize), 
+                ProjectTo2D(0, CubeSize, 0, _cellSize), 
+                Brushes.Green),
+                ("Z", 
+                ProjectTo2D(0, 0, -CubeSize, _cellSize), 
+                ProjectTo2D(0, 0, CubeSize, _cellSize), 
+                Brushes.Blue)
+            };
+
+            // Находим ближайшую ось
+            var nearestAxis = axes
+                .Select(axis => new {
+                    Axis = axis.Name,
+                    Distance = DistanceToLine(mouseX, mouseY, axis.Start.X, axis.Start.Y, axis.End.X, axis.End.Y)
+                })
+                .OrderBy(x => x.Distance)
+                .FirstOrDefault();
+
+            return nearestAxis?.Distance <= axisThreshold ? nearestAxis.Axis : null;
+        }
+        private double DistanceToLine(double x, double y, double x1, double y1, double x2, double y2)
+        {
+            // Вычисляем расстояние от точки (x,y) до линии (x1,y1)-(x2,y2)
+            double A = x - x1;
+            double B = y - y1;
+            double C = x2 - x1;
+            double D = y2 - y1;
+
+            double dot = A * C + B * D;
+            double len_sq = C * C + D * D;
+            double param = dot / len_sq;
+
+            double xx, yy;
+
+            if (param < 0)
+            {
+                xx = x1;
+                yy = y1;
+            }
+            else if (param > 1)
+            {
+                xx = x2;
+                yy = y2;
+            }
+            else
+            {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+
+            return Math.Sqrt((x - xx) * (x - xx) + (y - yy) * (y - yy));
+        }
+        private double GetInterpolationFactor(double x, double y, double x1, double y1, double x2, double y2)
+        {
+            // Вычисляем параметр t (0-1) для точки на линии
+            double dx = x2 - x1;
+            double dy = y2 - y1;
+            
+            if (Math.Abs(dx) > Math.Abs(dy))
+            {
+                return (x - x1) / dx;
+            }
+            else
+            {
+                return (y - y1) / dy;
+            }
+        }
+
+        private double Lerp(double a, double b, double t)
+        {
+            return a + (b - a) * t;
+        }
+        // Команды для кнопок
+        public void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            GridSize *= 0.9;
+            UpdateGrid();
+        }
+
+        public void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            GridSize *= 1.1;
+            UpdateGrid();
+        }
+
+        public void RotateRight_Click(object sender, RoutedEventArgs e)
+        {
+            _angleY -= 0.1;
+            UpdateGrid();
+        }
+
+        public void RotateLeft_Click(object sender, RoutedEventArgs e)
+        {
+            _angleY += 0.1;
+            UpdateGrid();
+        }
         protected override void OnLoaded(RoutedEventArgs e)
         {
             base.OnLoaded(e);
@@ -59,8 +300,12 @@ namespace GoodbyeDiplom.Views
 
         private void OnPointerMoved(object sender, PointerEventArgs e)
         {
+            // if (DataContext is MainWindowViewModel vm)
+            // {
+            //     vm.UpdateMouseCoordinates(e, this);
+            // }
             if (!_isDragging) return;
-            
+
             var currentPosition = e.GetPosition(this);
             var delta = currentPosition - _lastMousePosition;
             
@@ -84,7 +329,8 @@ namespace GoodbyeDiplom.Views
 
         private void UpdateGrid()
         {
-            if (Content is not Canvas canvas) return;
+            DataContext = new MainWindowViewModel();
+            //if (Content is not Canvas canvas) return;
 
             canvas.Children.Clear();
             _surfaceTriangles.Clear();
@@ -102,18 +348,18 @@ namespace GoodbyeDiplom.Views
             double DynamicStep = DynStepCalc(GridSize);
             
             // 1. Рисуем кубический каркас (статично)
-            DrawCubeFrame(canvas, centerX, centerY, fixedCellSize);
+            DrawCubeFrame(centerX, centerY, fixedCellSize);
             
             // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
-            DrawXYPlane(canvas, centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
+            DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
             
             // 3. Рисуем поверхность функции (масштабируется)
-            DrawFunctionSurface(canvas, centerX, centerY, fixedCellSize);
+            DrawFunctionSurface(centerX, centerY, fixedCellSize);
 
             // 4. Рисуем оси координат (статично)
-            DrawAxis(canvas, -CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
-            DrawAxis(canvas, 0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
-            DrawAxis(canvas, 0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+            DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
+            DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
+            DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
         }
         private double DynStepCalc(double gridSize)
         {
@@ -123,43 +369,43 @@ namespace GoodbyeDiplom.Views
             // Возвращаем шаг: 2^1=2, 2^2=4, 2^3=8, затем снова 2...
             return Math.Pow(2, scaleLevel + 1);
         }
-        private void DrawCubeFrame(Canvas canvas, double centerX, double centerY, double cellSize)
+        private void DrawCubeFrame(double centerX, double centerY, double cellSize)
         {
             Color frameColor = Colors.Black;
             double thickness = 1.5;
 
             // Нижняя грань (z = -GridSize)
-            DrawFrameLine(canvas, -CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize, -CubeSize
+            DrawFrameLine(-CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize, -CubeSize
+            DrawFrameLine(CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize
+            DrawFrameLine(CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, -CubeSize, CubeSize, -CubeSize, -CubeSize, -CubeSize, -CubeSize
+            DrawFrameLine(-CubeSize, CubeSize, -CubeSize, -CubeSize, -CubeSize, -CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
 
             // Верхняя грань (z = CubeSize)
-            DrawFrameLine(canvas, -CubeSize, -CubeSize, CubeSize, CubeSize, -CubeSize, CubeSize
+            DrawFrameLine(-CubeSize, -CubeSize, CubeSize, CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, CubeSize, -CubeSize, CubeSize, CubeSize, CubeSize, CubeSize
+            DrawFrameLine(CubeSize, -CubeSize, CubeSize, CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, CubeSize, CubeSize, CubeSize, -CubeSize, CubeSize, CubeSize
+            DrawFrameLine(CubeSize, CubeSize, CubeSize, -CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, -CubeSize, CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize
+            DrawFrameLine(-CubeSize, CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
 
             // Вертикальные рёбра
-            DrawFrameLine(canvas, -CubeSize, -CubeSize, -CubeSize, -CubeSize, -CubeSize, CubeSize
+            DrawFrameLine(-CubeSize, -CubeSize, -CubeSize, -CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize, CubeSize
+            DrawFrameLine(CubeSize, -CubeSize, -CubeSize, CubeSize, -CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, CubeSize, CubeSize, -CubeSize, CubeSize, CubeSize, CubeSize
+            DrawFrameLine(CubeSize, CubeSize, -CubeSize, CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
-            DrawFrameLine(canvas, -CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize
+            DrawFrameLine(-CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
         }
 
-        private void DrawFrameLine(Canvas canvas, 
+        private void DrawFrameLine( 
                                  double x1, double y1, double z1,
                                  double x2, double y2, double z2,
                                  Color color, double thickness,
@@ -178,7 +424,7 @@ namespace GoodbyeDiplom.Views
             canvas.Children.Add(line);
         }
 
-        private void DrawXYPlane(Canvas canvas, double centerX, double centerY, double gridStep, double cellSize)
+        private void DrawXYPlane(double centerX, double centerY, double gridStep, double cellSize)
         {
             Color gridColor = Color.FromArgb(80, 150, 150, 150);
             gridStep = GridSize/gridStep;
@@ -201,7 +447,7 @@ namespace GoodbyeDiplom.Views
 
                 // Подписи осей масштабируются (используем gridCellSize)
                 var labelPos = ProjectTo2D(x_norm, -0.1, 0, cellSize); // Масштабируем!
-                DrawLabel(canvas, (x).ToString("0.##"), Brushes.Black, 
+                DrawLabel((x).ToString("0.##"), Brushes.Black, 
                 labelPos, centerX, centerY, horizontal: true);
             }
 
@@ -222,12 +468,12 @@ namespace GoodbyeDiplom.Views
                 canvas.Children.Add(line);
                 // Подписи оси Y
                 var labelPos = ProjectTo2D(0, y_norm, 0, cellSize);
-                DrawLabel(canvas, y.ToString("0.##"), Brushes.Black, labelPos, 
+                DrawLabel(y.ToString("0.##"), Brushes.Black, labelPos, 
                 centerX, centerY, horizontal: false);
             }
 
         }
-        private void DrawLabel(Canvas canvas, string text, IBrush color, Point position, 
+        private void DrawLabel(string text, IBrush color, Point position, 
                              double centerX, double centerY, bool horizontal = true)
         {
             var textBlock = new TextBlock
@@ -252,7 +498,7 @@ namespace GoodbyeDiplom.Views
             canvas.Children.Add(textBlock);
         }
 
-        private void DrawFunctionSurface(Canvas canvas, double centerX, double centerY, double cellSize)
+        private void DrawFunctionSurface(double centerX, double centerY, double cellSize)
         {
             double step = GridSize / 10;
             Color surfaceColor = Color.FromArgb(180, 0, 120, 215);
@@ -340,7 +586,7 @@ namespace GoodbyeDiplom.Views
                 FontWeight = FontWeight.Normal
             };
         }
-private void DrawAxis(Canvas canvas, 
+        private void DrawAxis(
                     double x1, double y1, double z1,
                     double x2, double y2, double z2,
                     IBrush color, string label,
@@ -377,5 +623,6 @@ private void DrawAxis(Canvas canvas,
             
             return new Point(x2d * cellSize, y2d * cellSize);
         }
+
     }
 }

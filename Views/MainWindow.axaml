@@ -15,6 +15,35 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>  <!-- Основное пространство -->
+            <RowDefinition Height="Auto"/> <!-- Панель управления -->
+        </Grid.RowDefinitions>
+        
+        <!-- Основной Canvas -->
+        <Canvas Grid.Row="0" x:Name="MainCanvas"/>
+        
+        <!-- Панель статуса -->
+        <Grid Grid.Row="1" Height="40" Background="#EEE"> 
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!-- Координаты мыши -->
+            <TextBlock Text="{Binding GridCoordinates}" 
+                    VerticalAlignment="Center"
+                    Margin="10,0"
+                    FontSize="12"/>
+            
+            <!-- Кнопки управления -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,10,0">
+                <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"/>
+                <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"/>
+                <Button Content="↻" Width="30" Margin="5,0" Click="RotateRight_Click"/>
+                <Button Content="↺" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </Window>

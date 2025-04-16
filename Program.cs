@@ -1,6 +1,6 @@
 ﻿using Avalonia;
 using System;
-
+using Avalonia.ReactiveUI;
 namespace GoodbyeDiplom;
 
 sealed class Program
@@ -17,5 +17,6 @@ sealed class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
-            .LogToTrace();
+            .LogToTrace()
+            .UseReactiveUI();
 }

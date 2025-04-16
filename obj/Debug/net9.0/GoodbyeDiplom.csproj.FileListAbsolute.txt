@@ -66,3 +66,8 @@ C:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\G
 C:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\GoodbyeDiplom.genruntimeconfig.cache
 C:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\ref\GoodbyeDiplom.dll
 c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\obj\Debug\net9.0\GoodbyeDiplom.sourcelink.json
+c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\bin\Debug\net9.0\Avalonia.ReactiveUI.dll
+c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\bin\Debug\net9.0\DynamicData.dll
+c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\bin\Debug\net9.0\ReactiveUI.dll
+c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\bin\Debug\net9.0\Splat.dll
+c:\Users\HyperNova\OneDrive\Desktop\GitProjects\GoodbyeDiplom\bin\Debug\net9.0\System.Reactive.dll
