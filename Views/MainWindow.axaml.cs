@@ -509,7 +509,7 @@ namespace GoodbyeDiplom.Views
             if (!(DataContext is MainWindowViewModel vm)) return;
 
             double step = GridSize / 10;
-            Color surfaceColor = Color.FromArgb(180, 0, 120, 215);
+            Color surfaceColor = Color.FromArgb(180, 0, 89, 179);
             double discontinuityThreshold = GridSize * 2;
             // Масштабируем размер функции в соответствии с GridSize
             double scaleFactor = CubeSize / GridSize;
