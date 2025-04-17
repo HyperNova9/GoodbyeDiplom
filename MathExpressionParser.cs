@@ -64,6 +64,16 @@ namespace GoodbyeDiplom
                         i++;
                     tokens.Add(expression.Substring(start, i - start));
                 }
+                else if (expression[i] == '-' && 
+                        (i == 0 || 
+                        tokens.Last() == "(" || 
+                        IsOperator(tokens.Last())))
+                {
+                    // Обработка унарного минуса
+                    tokens.Add("0");
+                    tokens.Add("-");
+                    i++;
+                }
                 else
                 {
                     tokens.Add(expression[i].ToString());
@@ -72,7 +82,6 @@ namespace GoodbyeDiplom
             }
             return tokens;
         }
-
         private List<string> ConvertToRPN(List<string> tokens)
         {
             var output = new List<string>();

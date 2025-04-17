@@ -547,30 +547,35 @@ namespace GoodbyeDiplom.Views
                     var p3 = ProjectTo2D(x2, y2, z3, cellSize);
                     var p4 = ProjectTo2D(x1, y2, z4, cellSize);
                     //Обработка разрывов
-                    var triangle1 = new Polygon
+                    if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10)) // Увеличили порог пропуска
                     {
-                        Points = new Points {
-                            new Point(p1.X + centerX, p1.Y + centerY),
-                            new Point(p2.X + centerX, p2.Y + centerY),
-                            new Point(p3.X + centerX, p3.Y + centerY)
-                        },
-                        Fill = new SolidColorBrush(surfaceColor),
-                        Stroke = Brushes.Transparent
-                    };
+                        var triangle1 = new Polygon
+                        {
+                            Points = new Points {
+                                new Point(p1.X + centerX, p1.Y + centerY),
+                                new Point(p2.X + centerX, p2.Y + centerY),
+                                new Point(p3.X + centerX, p3.Y + centerY)
+                            },
+                            Fill = new SolidColorBrush(surfaceColor),
+                            Stroke = Brushes.Transparent,
+                            Opacity = double.IsInfinity(z1) || double.IsInfinity(z2) || double.IsInfinity(z3) ? 0.5 : 1
+                        };
 
-                    var triangle2 = new Polygon
-                    {
-                        Points = new Points {
-                            new Point(p1.X + centerX, p1.Y + centerY),
-                            new Point(p3.X + centerX, p3.Y + centerY),
-                            new Point(p4.X + centerX, p4.Y + centerY)
-                        },
-                        Fill = new SolidColorBrush(surfaceColor),
-                        Stroke = Brushes.Transparent
-                    };
+                        var triangle2 = new Polygon
+                        {
+                            Points = new Points {
+                                new Point(p1.X + centerX, p1.Y + centerY),
+                                new Point(p3.X + centerX, p3.Y + centerY),
+                                new Point(p4.X + centerX, p4.Y + centerY)
+                            },
+                            Fill = new SolidColorBrush(surfaceColor),
+                            Stroke = Brushes.Transparent,
+                            Opacity = double.IsInfinity(z1) || double.IsInfinity(z3) || double.IsInfinity(z4) ? 0.5 : 1
+                        };
 
-                    canvas.Children.Add(triangle1);
-                    canvas.Children.Add(triangle2);
+                        canvas.Children.Add(triangle1);
+                        canvas.Children.Add(triangle2);
+                    }
                 }
             }
         }
@@ -593,13 +598,11 @@ namespace GoodbyeDiplom.Views
         }
         private bool ShouldSkipPolygon(Point p1, Point p2, Point p3, Point p4, double maxDistance)
         {
-            // Проверяем расстояния между соседними точками
+            // Увеличиваем максимальное допустимое расстояние между точками
             if (DistanceBetween(p1, p2) > maxDistance) return true;
             if (DistanceBetween(p2, p3) > maxDistance) return true;
             if (DistanceBetween(p3, p4) > maxDistance) return true;
             if (DistanceBetween(p4, p1) > maxDistance) return true;
-            if (DistanceBetween(p1, p3) > maxDistance) return true;
-            
             return false;
         }
 
