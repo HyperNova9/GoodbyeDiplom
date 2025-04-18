@@ -1,4 +1,4 @@
-﻿// MainWindowViewModel.cs
+﻿#pragma warning disable CS8618
 using System;
 using ReactiveUI;
 using System.Reactive;
@@ -40,7 +40,6 @@ public class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            // Можно добавить вывод ошибки в интерфейс
             _function = (x, y) => 0;
             Console.WriteLine($"Ошибка парсинга: {ex.Message}");
         }

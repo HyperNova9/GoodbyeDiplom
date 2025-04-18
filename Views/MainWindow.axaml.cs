@@ -1,3 +1,4 @@
+#pragma warning disable CS8618, CS8622, CS8601, CS8602, CS8603
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -15,6 +16,7 @@ namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
     {
+        //Инициализация данных
         private double GridSize = 5;
         private const int CubeSize = 6;
         private double _cellSize = 40;
@@ -23,7 +25,6 @@ namespace GoodbyeDiplom.Views
         private double _angleY = -45 * Math.PI / 180;
         private bool _isDragging;
         Canvas canvas;
-        //private double _zoom = 1.0;
         private List<Shape> _surfaceTriangles = new List<Shape>();
         public MainWindow()
         {
@@ -51,6 +52,7 @@ namespace GoodbyeDiplom.Views
                 }
             };
         }
+        //Перерисовка и отрисовка сетки
         private void UpdateGrid()
         {
             canvas.Children.Clear();
@@ -60,9 +62,6 @@ namespace GoodbyeDiplom.Views
 
             // Фиксированный размер для куба, осей и СЕТКИ
             double fixedCellSize = Math.Min(Bounds.Width - 200, Bounds.Height) / 20;
-            
-            // Масштабируемый размер только для функции и числовых подписей
-            //double gridCellSize = fixedCellSize / _zoom;
 
             // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
             double DynamicStep = DynStepCalc(GridSize);
@@ -81,6 +80,45 @@ namespace GoodbyeDiplom.Views
             DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
             DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
         }
+        //Функция отрисовки самих осей
+        private void DrawAxis(
+            double x1, double y1, double z1,
+            double x2, double y2, double z2,
+            IBrush color, string label,
+            double centerX, double centerY, double cellSize)
+        {
+            var start = ProjectTo2D(x1, y1, z1, cellSize);
+            var end = ProjectTo2D(x2, y2, z2, cellSize);
+            
+            var line = new Line
+            {
+                StartPoint = new Point(start.X + centerX, start.Y + centerY),
+                EndPoint = new Point(end.X + centerX, end.Y + centerY),
+                Stroke = color,
+                StrokeThickness = 2
+            };
+            canvas.Children.Add(line);
+
+            // Добавляем подпись оси (статичную)
+            var textBlock = CreateLabel(label, color, 16);
+            textBlock.FontWeight = FontWeight.Bold;
+            
+            canvas.Children.Add(textBlock);
+            Canvas.SetLeft(textBlock, end.X + centerX + (label == "X" ? 10 : 0));
+            Canvas.SetTop(textBlock, end.Y + centerY - (label == "Z" ? 20 : 0));
+        }
+        //Функция для отрисовки подписей к самим осям (X,Y,Z)
+        private TextBlock CreateLabel(string text, IBrush color, double fontSize)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                Foreground = color,
+                FontSize = fontSize,
+                FontWeight = FontWeight.Normal
+            };
+        }
+        //Обновляем координаты мыши в интерфейсе
         private void UpdateMouseCoordinates(PointerEventArgs e)
         {
             if (DataContext is not MainWindowViewModel vm) return;
@@ -108,12 +146,12 @@ namespace GoodbyeDiplom.Views
                 {
                     case "X":
                         xCoord = formattedValue;
-                        // Если мы на оси X, попробуем найти Z (вертикальная координата)
+                        // Если мы на оси X, пробуем найти Z (вертикальная координата)
                         zCoord = GetZValueOnXAxis(mouseX, mouseY, centerX, centerY, value);
                         break;
                     case "Y":
                         yCoord = formattedValue;
-                        // Если мы на оси Y, попробуем найти Z (вертикальная координата)
+                        // Если мы на оси Y, пробуем найти Z (вертикальная координата)
                         zCoord = GetZValueOnYAxis(mouseX, mouseY, centerX, centerY, value);
                         break;
                     case "Z":
@@ -124,7 +162,7 @@ namespace GoodbyeDiplom.Views
 
             vm.GridCoordinates = $"X: {xCoord}, Y: {yCoord}, Z: {zCoord}";
         }
-
+        //Функция для получения координаты z по оси X
         private string GetZValueOnXAxis(double mouseX, double mouseY, double centerX, double centerY, double xValue)
         {
             // Проецируем точку на оси и смотрим высоту
@@ -151,7 +189,7 @@ namespace GoodbyeDiplom.Views
             
             return closestDist < 20 ? closestZ.ToString("0.##") : "—";
         }
-
+        //Функция для получения координаты Z по оси Y
         private string GetZValueOnYAxis(double mouseX, double mouseY, double centerX, double centerY, double yValue)
         {
             // Аналогично для оси Y
@@ -178,11 +216,11 @@ namespace GoodbyeDiplom.Views
             
             return closestDist < 20 ? closestZ.ToString("0.##") : "—";
         }
-                private double GetAxisValue(double mouseX, double mouseY, string axis, double centerX, double centerY)
+        //Получение значения осей
+        private double GetAxisValue(double mouseX, double mouseY, string axis, double centerX, double centerY)
         {
             // Преобразуем координаты мыши в значение на оси
             double value = 0;
-            
             switch (axis)
             {
                 case "X":
@@ -209,6 +247,7 @@ namespace GoodbyeDiplom.Views
             
             return value;
         }
+         //Функция поиска ближайших осей
         private string GetNearestAxis(double mouseX, double mouseY, double centerX, double centerY)
         {
             const double axisThreshold = 15; // Расстояние в пикселях для захвата оси
@@ -241,6 +280,7 @@ namespace GoodbyeDiplom.Views
 
             return nearestAxis?.Distance <= axisThreshold ? nearestAxis.Axis : null;
         }
+        //Функция определяющая расстояние между точкой и линией
         private double DistanceToLine(double x, double y, double x1, double y1, double x2, double y2)
         {
             // Вычисляем расстояние от точки (x,y) до линии (x1,y1)-(x2,y2)
@@ -273,6 +313,7 @@ namespace GoodbyeDiplom.Views
 
             return Math.Sqrt((x - xx) * (x - xx) + (y - yy) * (y - yy));
         }
+        //Математический интерполятор
         private double GetInterpolationFactor(double x, double y, double x1, double y1, double x2, double y2)
         {
             // Вычисляем параметр t (0-1) для точки на линии
@@ -293,7 +334,7 @@ namespace GoodbyeDiplom.Views
         {
             return a + (b - a) * t;
         }
-        // Команды для кнопок
+        // Команды для кнопок (масштабирование, вращение)
         public void ZoomIn_Click(object sender, RoutedEventArgs e)
         {
             GridSize *= 0.9;
@@ -317,34 +358,31 @@ namespace GoodbyeDiplom.Views
             _angleY += 0.1;
             UpdateGrid();
         }
+        //Отрисовка объектов при загрузке окна
         protected override void OnLoaded(RoutedEventArgs e)
         {
             base.OnLoaded(e);
             UpdateGrid();
         }
-
+        //Отрисовка объектов при изменениях размеров окна
         private void OnSizeChanged(object sender, SizeChangedEventArgs e)
         {
             UpdateGrid();
         }
-
+        //Обработка нажатия кнопки мыши
         private void OnPointerPressed(object sender, PointerPressedEventArgs e)
         {
             _lastMousePosition = e.GetPosition(this);
             _isDragging = true;
         }
-
+        //Обработка отжатия кнопки мыши
         private void OnPointerReleased(object sender, PointerReleasedEventArgs e)
         {
             _isDragging = false;
         }
-
+        //Обработка движения мыши
         private void OnPointerMoved(object sender, PointerEventArgs e)
         {
-            // if (DataContext is MainWindowViewModel vm)
-            // {
-            //     vm.UpdateMouseCoordinates(e, this);
-            // }
             if (!_isDragging) return;
 
             var currentPosition = e.GetPosition(this);
@@ -357,16 +395,16 @@ namespace GoodbyeDiplom.Views
             _lastMousePosition = currentPosition;
             UpdateGrid();
         }
-
+        //Обработка движения колёсика мыши
         private void OnPointerWheelChanged(object sender, PointerWheelEventArgs e)
         {
             // Инвертированное масштабирование (скролл вперёд - приближение)
             var zoomFactor = e.Delta.Y > 0 ? 0.9 : 1.1;
             GridSize *= zoomFactor;
-            // _zoom = Math.Clamp(_zoom, 0.2, 5.0);
             GridSize = Math.Clamp(GridSize, 0.01, 50000);
             UpdateGrid();
         }
+        //Функция для расчёта динамического шага при масштабировании
         private double DynStepCalc(double gridSize)
         {
             // Определяем текущий "уровень масштаба" (0, 1, 2, 0, 1, 2...)
@@ -375,6 +413,7 @@ namespace GoodbyeDiplom.Views
             // Возвращаем шаг: 2^1=2, 2^2=4, 2^3=8, затем снова 2...
             return Math.Pow(2, scaleLevel + 1);
         }
+        //Функция для отрисовки каркаса сетки
         private void DrawCubeFrame(double centerX, double centerY, double cellSize)
         {
             Color frameColor = Colors.Black;
@@ -410,7 +449,7 @@ namespace GoodbyeDiplom.Views
             DrawFrameLine(-CubeSize, CubeSize, -CubeSize, -CubeSize, CubeSize, CubeSize
             , frameColor, thickness, centerX, centerY, cellSize);
         }
-
+        //Функция для отрисовки линии (используется в отрисовке куба)
         private void DrawFrameLine( 
                                  double x1, double y1, double z1,
                                  double x2, double y2, double z2,
@@ -429,7 +468,7 @@ namespace GoodbyeDiplom.Views
             };
             canvas.Children.Add(line);
         }
-
+        //Функция для отрисовки сетки на XY
         private void DrawXYPlane(double centerX, double centerY, double gridStep, double cellSize)
         {
             Color gridColor = Color.FromArgb(80, 150, 150, 150);
@@ -456,7 +495,7 @@ namespace GoodbyeDiplom.Views
                 DrawLabel((x).ToString("0.##"), Brushes.Black, 
                 labelPos, centerX, centerY, horizontal: true);
             }
-
+            
             // Линии по Y (z=0)
             for (double y = -GridSize; y <= GridSize; y += gridStep)
             {
@@ -479,6 +518,7 @@ namespace GoodbyeDiplom.Views
             }
 
         }
+        //Функция для отрисовки подписей на осях
         private void DrawLabel(string text, IBrush color, Point position, 
                              double centerX, double centerY, bool horizontal = true)
         {
@@ -503,7 +543,7 @@ namespace GoodbyeDiplom.Views
 
             canvas.Children.Add(textBlock);
         }
-
+        //Функция для отрисовки графика двумерной функции z(x,y)
         private void DrawFunctionSurface(double centerX, double centerY, double cellSize)
         {
             if (!(DataContext is MainWindowViewModel vm)) return;
@@ -547,7 +587,7 @@ namespace GoodbyeDiplom.Views
                     var p3 = ProjectTo2D(x2, y2, z3, cellSize);
                     var p4 = ProjectTo2D(x1, y2, z4, cellSize);
                     //Обработка разрывов
-                    if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10)) // Увеличили порог пропуска
+                    if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10))
                     {
                         var triangle1 = new Polygon
                         {
@@ -579,6 +619,7 @@ namespace GoodbyeDiplom.Views
                 }
             }
         }
+        //Безопасный расчёт значения функции с учётом разрывов второго рода
         private double SafeCalculate(MainWindowViewModel vm, double x, double y, double threshold)
         {
             try
@@ -596,6 +637,7 @@ namespace GoodbyeDiplom.Views
                 return double.PositiveInfinity;
             }
         }
+        //Ещё один обработчки разрывов
         private bool ShouldSkipPolygon(Point p1, Point p2, Point p3, Point p4, double maxDistance)
         {
             // Увеличиваем максимальное допустимое расстояние между точками
@@ -605,11 +647,12 @@ namespace GoodbyeDiplom.Views
             if (DistanceBetween(p4, p1) > maxDistance) return true;
             return false;
         }
-
+        //Функция для расчёта расстояния между точками
         private double DistanceBetween(Point a, Point b)
         {
             return Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
         }
+        //Структура 3D точки
         private struct Point3D
         {
             public double X { get; }
@@ -623,49 +666,12 @@ namespace GoodbyeDiplom.Views
                 Z = z;
             }
         }
-
+        //Статичная функция (не используется)
         private double Function(double x, double y)
         {
             return Math.Exp(x) + Math.Exp(y);
         }
-
-        private TextBlock CreateLabel(string text, IBrush color, double fontSize)
-        {
-            return new TextBlock
-            {
-                Text = text,
-                Foreground = color,
-                FontSize = fontSize,
-                FontWeight = FontWeight.Normal
-            };
-        }
-        private void DrawAxis(
-                    double x1, double y1, double z1,
-                    double x2, double y2, double z2,
-                    IBrush color, string label,
-                    double centerX, double centerY, double cellSize)
-        {
-            var start = ProjectTo2D(x1, y1, z1, cellSize);
-            var end = ProjectTo2D(x2, y2, z2, cellSize);
-            
-            var line = new Line
-            {
-                StartPoint = new Point(start.X + centerX, start.Y + centerY),
-                EndPoint = new Point(end.X + centerX, end.Y + centerY),
-                Stroke = color,
-                StrokeThickness = 2
-            };
-            canvas.Children.Add(line);
-
-            // Добавляем подпись оси (статичную)
-            var textBlock = CreateLabel(label, color, 16);
-            textBlock.FontWeight = FontWeight.Bold;
-            
-            canvas.Children.Add(textBlock);
-            Canvas.SetLeft(textBlock, end.X + centerX + (label == "X" ? 10 : 0));
-            Canvas.SetTop(textBlock, end.Y + centerY - (label == "Z" ? 20 : 0));
-        }
-
+        //Функция для преобразования 3D в 2D
         private Point ProjectTo2D(double x, double y, double z, double cellSize)
         {
             // Изометрическая проекция с Z как вертикальной осью (направленной вверх)
