@@ -8,7 +8,6 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="3D Function Grapher">
-
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
@@ -16,7 +15,7 @@
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>  <!-- График -->
-            <ColumnDefinition Width="200"/> <!-- Панель управления -->
+            <ColumnDefinition Width="300"/> <!-- Панель управления -->
         </Grid.ColumnDefinitions>
         
         <!-- Основной график -->
@@ -50,28 +49,78 @@
         <!-- Правая панель управления -->
         <Grid Grid.Column="1" Background="#F5F5F5">
             <Grid.RowDefinitions>
-                <RowDefinition Height="50"/>
-                <RowDefinition Height="100"/>
-                <RowDefinition Height="50"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            
+
             <TextBlock Text="Функция z(x,y):" 
-                       Margin="10,20,10,5"
+                       Margin="10"
                        FontWeight="Bold"/>
             
             <TextBox Grid.Row="1" 
                      Text="{Binding FunctionExpression, Mode=TwoWay}"
-                     Margin="10,0,10,10"
+                     Margin="10,0,0,10"
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
                      FontFamily="Consolas"
                      Height="100"/>
             
-            <Button Grid.Row="2" 
+            <Button Grid.Row="2"
                     Content="Построить график" 
-                    Margin="10,0,10,20"
+                    Margin="10,0,0,10"
                     Height="40"
+                    Click="OnCreateButtonPressed"
                     x:Name="CreateFunction"/>
+
+            <TextBlock Grid.Row="3" 
+                       Text="Настройки поверхности:" 
+                       Margin="10,0,0,0"
+                       FontWeight="Bold"/>
+            
+            <!-- Цвет -->
+            
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,0,0,0">
+                <TextBlock Text="Цвет:" VerticalAlignment="Center" Width="100"/>
+                <ColorPicker x:Name="colorPicker" Width="100" Height="50"
+             Margin="10,0,0,0"/>
+            </StackPanel>
+            
+            <!-- Дробление -->
+            <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="10,10,0,0">
+                <TextBlock Text="Шаг сетки: " VerticalAlignment="Center" Width="100"/>
+                <Slider Minimum="1" Maximum="100" Value="{Binding StepSize}" 
+                        Width="100" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                <TextBlock Text="{Binding StepSize, StringFormat='{}{0:F2}'}" 
+                           Margin="10,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <Button Grid.Row = "6" Content="Изменить..." Margin="10,0,0,10" Click="UpdateGridFromVM"/>
+            <!-- Видимость элементов -->
+            <TextBlock Grid.Row="7" Text="Видимость элементов:" 
+                       Margin="10,0"
+                       FontWeight="Bold"/>
+
+            <CheckBox Grid.Row="8" Content="Оси координат" 
+                     IsChecked="{Binding ShowAxes}" Margin="10,0,0,0"
+                     Click="UpdateGridFromVM"/>
+            <CheckBox Grid.Row="9" Content="Подписи осей" 
+                     IsChecked="{Binding ShowLabels}" Margin="10,0,0,0"
+                     Click="UpdateGridFromVM"/>
+            <CheckBox Grid.Row="10" Content="Кубический каркас" 
+                     IsChecked="{Binding ShowCube}" Margin="10,0,0,0"
+                     Click="UpdateGridFromVM"/>
+            <CheckBox Grid.Row="11" Content="Координатная сетка" 
+                     IsChecked="{Binding ShowGrid}" Margin="10,0,0,0"
+                     Click="UpdateGridFromVM"/>
         </Grid>
     </Grid>
 </Window>

@@ -1,6 +1,7 @@
 #pragma warning disable CS8618, CS8622, CS8601, CS8602, CS8603
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Styling;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Controls.Shapes;
@@ -12,6 +13,9 @@ using GoodbyeDiplom.ViewModels;
 using GoodbyeDiplom.Views;
 using ReactiveUI;
 using Avalonia.Threading;
+using System.Threading.Tasks;
+using System.Reactive.Linq;
+using DynamicData.Binding;
 namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
@@ -29,6 +33,7 @@ namespace GoodbyeDiplom.Views
         public MainWindow()
         {
             InitializeComponent();
+            
             Title = "3D Function Surface (Z Vertical)";
             Width = 800;
             Height = 600;
@@ -36,49 +41,75 @@ namespace GoodbyeDiplom.Views
             DataContext = vm;
             // В конструкторе MainWindow
             canvas = this.FindControl<Canvas>("MainCanvas");
-            this.PointerPressed += OnPointerPressed;
-            this.PointerReleased += OnPointerReleased;
-            this.PointerMoved += OnPointerMoved;
-            this.PointerWheelChanged += OnPointerWheelChanged;
-            this.SizeChanged += OnSizeChanged;
+            colorPicker.Color = vm.SurfaceColor;
+            // var button = this.FindControl<Button>("CreateFunction");
+            PointerPressed += OnPointerPressed;
+            PointerReleased += OnPointerReleased;
+            PointerMoved += OnPointerMoved;
+            PointerWheelChanged += OnPointerWheelChanged;
+            SizeChanged += OnSizeChanged;
+            // button.Click += OnCreateButtonPressed;
             PointerMoved += (s, e) => UpdateMouseCoordinates(e);
-            var button = this.FindControl<Button>("CreateFunction");
-            button.Click += (s, e) => 
-            {
-                if (DataContext is MainWindowViewModel vm)
-                {
-                    vm.UpdateFunction();
-                    UpdateGrid();
-                }
-            };
+            OnChangedValues();
         }
+        private void OnChangedValues()
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            vm.UpdateData += UpdateGridEventHandler;
+        }
+
+        private void UpdateGridFromVM(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            var color = colorPicker.Color;
+            vm.UpdateColor(color);
+            UpdateGrid();
+        }
+        private void UpdateGridEventHandler(object? sender, double isEvent)
+        {
+            UpdateGrid();
+        }
+
+        private void OnCreateButtonPressed(object? s, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.UpdateFunction();
+                UpdateGrid();
+            }
+        }
+
         //Перерисовка и отрисовка сетки
         private void UpdateGrid()
         {
+            if (DataContext is not MainWindowViewModel vm) return;
             canvas.Children.Clear();
             _surfaceTriangles.Clear();
-            double centerX = (Bounds.Width - 200) / 2;
+            double centerX = (Bounds.Width - 300) / 2;
             double centerY = Bounds.Height / 2;
 
             // Фиксированный размер для куба, осей и СЕТКИ
-            double fixedCellSize = Math.Min(Bounds.Width - 200, Bounds.Height) / 20;
+            double fixedCellSize = Math.Min(Bounds.Width - 300, Bounds.Height) / 20;
 
             // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
             double DynamicStep = DynStepCalc(GridSize);
-            
             // 1. Рисуем кубический каркас (статично)
-            DrawCubeFrame(centerX, centerY, fixedCellSize);
+            if (vm.ShowCube)
+                DrawCubeFrame(centerX, centerY, fixedCellSize);
             
             // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
-            DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
+            if (vm.ShowGrid)
+                DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
             
             // 3. Рисуем поверхность функции (масштабируется)
             DrawFunctionSurface(centerX, centerY, fixedCellSize);
-
-            // 4. Рисуем оси координат (статично)
-            DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
-            DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
-            DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+            // 4. Рисуем оси координат (статично) 
+            if (vm.ShowAxes)
+            {
+                DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
+                DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
+                DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+            }
         }
         //Функция отрисовки самих осей
         private void DrawAxis(
@@ -87,6 +118,7 @@ namespace GoodbyeDiplom.Views
             IBrush color, string label,
             double centerX, double centerY, double cellSize)
         {
+            if (DataContext is not MainWindowViewModel vm) return;
             var start = ProjectTo2D(x1, y1, z1, cellSize);
             var end = ProjectTo2D(x2, y2, z2, cellSize);
             
@@ -98,14 +130,17 @@ namespace GoodbyeDiplom.Views
                 StrokeThickness = 2
             };
             canvas.Children.Add(line);
-
             // Добавляем подпись оси (статичную)
-            var textBlock = CreateLabel(label, color, 16);
-            textBlock.FontWeight = FontWeight.Bold;
+            if (vm.ShowLabels)
+            {
+                var textBlock = CreateLabel(label, color, 16);
+                textBlock.FontWeight = FontWeight.Bold;
+                
+                canvas.Children.Add(textBlock);
+                Canvas.SetLeft(textBlock, end.X + centerX + (label == "X" ? 10 : 0));
+                Canvas.SetTop(textBlock, end.Y + centerY - (label == "Z" ? 20 : 0));
+            }
             
-            canvas.Children.Add(textBlock);
-            Canvas.SetLeft(textBlock, end.X + centerX + (label == "X" ? 10 : 0));
-            Canvas.SetTop(textBlock, end.Y + centerY - (label == "Z" ? 20 : 0));
         }
         //Функция для отрисовки подписей к самим осям (X,Y,Z)
         private TextBlock CreateLabel(string text, IBrush color, double fontSize)
@@ -548,12 +583,13 @@ namespace GoodbyeDiplom.Views
         {
             if (!(DataContext is MainWindowViewModel vm)) return;
 
-            double step = GridSize / 10;
-            Color surfaceColor = Color.FromArgb(180, 0, 89, 179);
+            double step = GridSize / vm.StepSize;
+            //byte opacity = (byte)(vm.SurfaceOpacity * 255);
+            Color surfaceColor = vm.SurfaceColor;
             double discontinuityThreshold = GridSize * 2;
             // Масштабируем размер функции в соответствии с GridSize
             double scaleFactor = CubeSize / GridSize;
-
+            
             for (double x = -GridSize; x < GridSize; x += step)
             {
                 for (double y = -GridSize; y < GridSize; y += step)
@@ -587,7 +623,7 @@ namespace GoodbyeDiplom.Views
                     var p3 = ProjectTo2D(x2, y2, z3, cellSize);
                     var p4 = ProjectTo2D(x1, y2, z4, cellSize);
                     //Обработка разрывов
-                    if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10))
+                    //if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10))
                     {
                         var triangle1 = new Polygon
                         {

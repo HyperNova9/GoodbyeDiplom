@@ -21,14 +21,15 @@ namespace GoodbyeDiplom
             { "cos", Math.Cos },
             { "tan", Math.Tan },
             { "exp", Math.Exp },
-            { "log", Math.Log },
+            { "ln", Math.Log },
             { "sqrt", Math.Sqrt },
             { "abs", Math.Abs }
         };
 
         private Dictionary<string, Func<double, double, double>> _binaryFunctions = new Dictionary<string, Func<double, double, double>>(StringComparer.OrdinalIgnoreCase)
         {
-            { "pow", Math.Pow }
+            { "pow", Math.Pow },
+            { "log", Math.Log },
         };
 
         public Func<double, double, double> Parse(string expression)

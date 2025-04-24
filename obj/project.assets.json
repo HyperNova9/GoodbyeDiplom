@@ -107,11 +107,11 @@
           "buildTransitive/Avalonia.BuildServices.targets": {}
         }
       },
-      "Avalonia.Controls.ColorPicker/11.2.1": {
+      "Avalonia.Controls.ColorPicker/11.2.6": {
         "type": "package",
         "dependencies": {
-          "Avalonia": "11.2.1",
-          "Avalonia.Remote.Protocol": "11.2.1"
+          "Avalonia": "11.2.6",
+          "Avalonia.Remote.Protocol": "11.2.6"
         },
         "compile": {
           "lib/net8.0/Avalonia.Controls.ColorPicker.dll": {
@@ -903,15 +903,15 @@
         "tools/netstandard2.0/runtimeconfig.json"
       ]
     },
-    "Avalonia.Controls.ColorPicker/11.2.1": {
-      "sha512": "t8ViFwfIe6jCO5HvzPWOtwGNSMHYNc8XakWp76Rgy1MOiht8tHKry9cU7k40AHEYU6wVjiYBkl0c8zYZyyha1g==",
+    "Avalonia.Controls.ColorPicker/11.2.6": {
+      "sha512": "LTq8Ii/SNW8+klJSGm6KkCfdfEBZDbTaFzAHoCJobYqZHv7Lev3OsfEWBsuIAAIGOibgFChNIkSEu4rAaD+yLQ==",
       "type": "package",
-      "path": "avalonia.controls.colorpicker/11.2.1",
+      "path": "avalonia.controls.colorpicker/11.2.6",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "Icon.png",
-        "avalonia.controls.colorpicker.11.2.1.nupkg.sha512",
+        "avalonia.controls.colorpicker.11.2.6.nupkg.sha512",
         "avalonia.controls.colorpicker.nuspec",
         "lib/net6.0/Avalonia.Controls.ColorPicker.dll",
         "lib/net6.0/Avalonia.Controls.ColorPicker.xml",
@@ -1881,6 +1881,7 @@
   "projectFileDependencyGroups": {
     "net9.0": [
       "Avalonia >= 11.2.7",
+      "Avalonia.Controls.ColorPicker >= 11.2.6",
       "Avalonia.Desktop >= 11.2.1",
       "Avalonia.Diagnostics >= 11.2.1",
       "Avalonia.Fonts.Inter >= 11.2.1",
@@ -1938,6 +1939,10 @@
           "Avalonia": {
             "target": "Package",
             "version": "[11.2.7, )"
+          },
+          "Avalonia.Controls.ColorPicker": {
+            "target": "Package",
+            "version": "[11.2.6, )"
           },
           "Avalonia.Desktop": {
             "target": "Package",
