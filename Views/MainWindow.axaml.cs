@@ -16,24 +16,28 @@ using Avalonia.Threading;
 using System.Threading.Tasks;
 using System.Reactive.Linq;
 using DynamicData.Binding;
+using System.Threading;
 namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
     {
         //Инициализация данных
         private double GridSize = 5;
-        private const int CubeSize = 6;
+        private bool _scaleCube = false;
+        private const int CubeSize = 7;
         private double _cellSize = 40;
         private Point _lastMousePosition;
         private double _angleX = 35 * Math.PI / 180;
         private double _angleY = -45 * Math.PI / 180;
         private bool _isDragging;
+        private bool _isMoved = false;
+        private bool _isWheeling = false;
+        private DispatcherTimer WheelTimer;
         Canvas canvas;
         private List<Shape> _surfaceTriangles = new List<Shape>();
         public MainWindow()
         {
             InitializeComponent();
-            
             Title = "3D Function Surface (Z Vertical)";
             Width = 800;
             Height = 600;
@@ -57,28 +61,6 @@ namespace GoodbyeDiplom.Views
             if (DataContext is not MainWindowViewModel vm) return;
             vm.UpdateData += UpdateGridEventHandler;
         }
-
-        private void UpdateGridFromVM(object? sender, RoutedEventArgs e)
-        {
-            if (DataContext is not MainWindowViewModel vm) return;
-            var color = colorPicker.Color;
-            vm.UpdateColor(color);
-            UpdateGrid();
-        }
-        private void UpdateGridEventHandler(object? sender, double isEvent)
-        {
-            UpdateGrid();
-        }
-
-        private void OnCreateButtonPressed(object? s, RoutedEventArgs e)
-        {
-            if (DataContext is MainWindowViewModel vm)
-            {
-                vm.UpdateFunction();
-                UpdateGrid();
-            }
-        }
-
         //Перерисовка и отрисовка сетки
         private void UpdateGrid()
         {
@@ -101,14 +83,35 @@ namespace GoodbyeDiplom.Views
             if (vm.ShowGrid)
                 DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
             
-            // 3. Рисуем поверхность функции (масштабируется)
-            DrawFunctionSurface(centerX, centerY, fixedCellSize);
+            
             // 4. Рисуем оси координат (статично) 
             if (vm.ShowAxes)
             {
                 DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
                 DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
                 DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+            }
+            // 3. Рисуем поверхность функции (масштабируется)
+            DrawFunctionSurface(centerX, centerY, fixedCellSize);
+        }
+        private void UpdateGridFromVM(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            var color = colorPicker.Color;
+            vm.UpdateColor(color);
+            UpdateGrid();
+        }
+        private void UpdateGridEventHandler(object? sender, double isEvent)
+        {
+            UpdateGrid();
+        }
+
+        private void OnCreateButtonPressed(object? s, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.UpdateFunction();
+                UpdateGrid();
             }
         }
         //Функция отрисовки самих осей
@@ -409,17 +412,20 @@ namespace GoodbyeDiplom.Views
         {
             _lastMousePosition = e.GetPosition(this);
             _isDragging = true;
+            _isMoved = true;
+            UpdateGrid();
         }
         //Обработка отжатия кнопки мыши
         private void OnPointerReleased(object sender, PointerReleasedEventArgs e)
         {
             _isDragging = false;
+            _isMoved = false;
+            UpdateGrid();
         }
         //Обработка движения мыши
         private void OnPointerMoved(object sender, PointerEventArgs e)
         {
             if (!_isDragging) return;
-
             var currentPosition = e.GetPosition(this);
             var delta = currentPosition - _lastMousePosition;
             
@@ -433,11 +439,56 @@ namespace GoodbyeDiplom.Views
         //Обработка движения колёсика мыши
         private void OnPointerWheelChanged(object sender, PointerWheelEventArgs e)
         {
-            // Инвертированное масштабирование (скролл вперёд - приближение)
+            _isMoved = true;
+            if (!_isWheeling)
+            {
+                _isWheeling = true;
+            }
+
+            // Сброс таймера завершения
+            if (WheelTimer != null)
+            {
+                WheelTimer.Stop();
+            }
+            else
+            {
+                WheelTimer = new DispatcherTimer 
+                { 
+                    Interval = TimeSpan.FromMilliseconds(400) 
+                };
+                WheelTimer.Tick += OnWheelEnded;
+            }
+            
+            WheelTimer.Start();
+            
+            // Оригинальный код для масштабирования
             var zoomFactor = e.Delta.Y > 0 ? 0.9 : 1.1;
             GridSize *= zoomFactor;
             GridSize = Math.Clamp(GridSize, 0.01, 50000);
             UpdateGrid();
+        }
+        private void OnWheelEnded(object sender, EventArgs e)
+        {
+            WheelTimer.Stop();
+            _isWheeling = false;
+            
+            // Действие после завершения вращения
+            _isMoved = false;
+            UpdateGrid(); 
+            
+            // Очистка таймера
+            WheelTimer.Tick -= OnWheelEnded;
+            WheelTimer = null;
+        }
+        private void OnKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.S)
+            {
+                if (!_scaleCube) 
+                    _scaleCube = true;
+                else
+                    _scaleCube = false;
+            }
         }
         //Функция для расчёта динамического шага при масштабировании
         private double DynStepCalc(double gridSize)
@@ -582,8 +633,11 @@ namespace GoodbyeDiplom.Views
         private void DrawFunctionSurface(double centerX, double centerY, double cellSize)
         {
             if (!(DataContext is MainWindowViewModel vm)) return;
-
-            double step = GridSize / vm.StepSize;
+            double step;
+            if (!_isMoved)
+                step = GridSize / vm.StepSize;
+            else
+                step = GridSize / 10;
             //byte opacity = (byte)(vm.SurfaceOpacity * 255);
             Color surfaceColor = vm.SurfaceColor;
             double discontinuityThreshold = GridSize * 2;

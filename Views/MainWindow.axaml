@@ -11,7 +11,7 @@
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-
+    
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>  <!-- График -->
@@ -40,8 +40,8 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,10,0">
                     <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"/>
                     <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"/>
-                    <Button Content="↻" Width="30" Margin="5,0" Click="RotateRight_Click"/>
-                    <Button Content="↺" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
+                    <Button Content="←" Width="30" Margin="5,0" Click="RotateRight_Click"/>
+                    <Button Content="→" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
                 </StackPanel>
             </Grid>
         </Grid>
@@ -63,64 +63,83 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Функция z(x,y):" 
-                       Margin="10"
-                       FontWeight="Bold"/>
-            
-            <TextBox Grid.Row="1" 
-                     Text="{Binding FunctionExpression, Mode=TwoWay}"
-                     Margin="10,0,0,10"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap"
-                     FontFamily="Consolas"
-                     Height="100"/>
-            
-            <Button Grid.Row="2"
-                    Content="Построить график" 
-                    Margin="10,0,0,10"
-                    Height="40"
-                    Click="OnCreateButtonPressed"
-                    x:Name="CreateFunction"/>
+            <!-- Группа "Функция" -->
+            <Border Grid.Row="0" Grid.RowSpan="3" Margin="10" BorderBrush="#e3e3e3" BorderThickness="1" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock Text="Функция z(x,y)" 
+                               Margin="5" 
+                               FontWeight="Bold"
+                               Background="#EEE"
+                               Padding="5"/>
+                    
+                    <TextBox Text="{Binding FunctionExpression, Mode=TwoWay}"
+                             Margin="5,0,5,10"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             FontFamily="Consolas"
+                             Height="100"/>
+                    
+                    <Button Content="Построить график" 
+                            Margin="5,0,5,5"
+                            Height="40"
+                            Click="OnCreateButtonPressed"
+                            x:Name="CreateFunction"/>
+                </StackPanel>
+            </Border>
 
-            <TextBlock Grid.Row="3" 
-                       Text="Настройки поверхности:" 
-                       Margin="10,0,0,0"
-                       FontWeight="Bold"/>
-            
-            <!-- Цвет -->
-            
-            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,0,0,0">
-                <TextBlock Text="Цвет:" VerticalAlignment="Center" Width="100"/>
-                <ColorPicker x:Name="colorPicker" Width="100" Height="50"
-             Margin="10,0,0,0"/>
-            </StackPanel>
-            
-            <!-- Дробление -->
-            <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="10,10,0,0">
-                <TextBlock Text="Шаг сетки: " VerticalAlignment="Center" Width="100"/>
-                <Slider Minimum="1" Maximum="100" Value="{Binding StepSize}" 
-                        Width="100" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                <TextBlock Text="{Binding StepSize, StringFormat='{}{0:F2}'}" 
-                           Margin="10,0" VerticalAlignment="Center"/>
-            </StackPanel>
-            <Button Grid.Row = "6" Content="Изменить..." Margin="10,0,0,10" Click="UpdateGridFromVM"/>
-            <!-- Видимость элементов -->
-            <TextBlock Grid.Row="7" Text="Видимость элементов:" 
-                       Margin="10,0"
-                       FontWeight="Bold"/>
+            <!-- Группа "Настройки поверхности" -->
+            <Border Grid.Row="3" Grid.RowSpan="4" Margin="10" BorderBrush="#e3e3e3" BorderThickness="1" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock Text="Настройки поверхности" 
+                               Margin="5" 
+                               FontWeight="Bold"
+                               Background="#EEE"
+                               Padding="5"/>
+                    
+                    <!-- Цвет -->
+                    <StackPanel Orientation="Horizontal" Margin="5,0,5,0">
+                        <TextBlock Text="Цвет:" VerticalAlignment="Center" Width="100"/>
+                        <ColorPicker x:Name="colorPicker" Width="100" Height="20"/>
+                    </StackPanel>
+                    
+                    <!-- Дробление -->
+                    <StackPanel Orientation="Horizontal" Margin="5,0,5,0">
+                        <TextBlock Text="Шаг сетки: " VerticalAlignment="Center" Width="100"/>
+                        <Slider Minimum="1" Maximum="100" Value="{Binding StepSize}" 
+                                Width="100" VerticalAlignment="Center" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                        <TextBlock Text="{Binding StepSize, StringFormat='{}{0:F2}'}" 
+                                   Margin="10,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <Button Content="Применить изменения" 
+                            Margin="5,0,5,5"
+                            Click="UpdateGridFromVM"/>
+                </StackPanel>
+            </Border>
 
-            <CheckBox Grid.Row="8" Content="Оси координат" 
-                     IsChecked="{Binding ShowAxes}" Margin="10,0,0,0"
-                     Click="UpdateGridFromVM"/>
-            <CheckBox Grid.Row="9" Content="Подписи осей" 
-                     IsChecked="{Binding ShowLabels}" Margin="10,0,0,0"
-                     Click="UpdateGridFromVM"/>
-            <CheckBox Grid.Row="10" Content="Кубический каркас" 
-                     IsChecked="{Binding ShowCube}" Margin="10,0,0,0"
-                     Click="UpdateGridFromVM"/>
-            <CheckBox Grid.Row="11" Content="Координатная сетка" 
-                     IsChecked="{Binding ShowGrid}" Margin="10,0,0,0"
-                     Click="UpdateGridFromVM"/>
+            <!-- Группа "Видимость элементов" -->
+            <Border Grid.Row="7" Grid.RowSpan="4" Margin="10" BorderBrush="#e3e3e3" BorderThickness="1" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock Text="Видимость элементов" 
+                               Margin="5" 
+                               FontWeight="Bold"
+                               Background="#EEE"
+                               Padding="5"/>
+                    
+                    <CheckBox Content="Оси координат" 
+                             IsChecked="{Binding ShowAxes}" Margin="5,0,5,0"
+                             Click="UpdateGridFromVM"/>
+                    <CheckBox Content="Подписи осей" 
+                             IsChecked="{Binding ShowLabels}" Margin="5,0,5,0"
+                             Click="UpdateGridFromVM"/>
+                    <CheckBox Content="Кубический каркас" 
+                             IsChecked="{Binding ShowCube}" Margin="5,0,5,0"
+                             Click="UpdateGridFromVM"/>
+                    <CheckBox Content="Координатная сетка" 
+                             IsChecked="{Binding ShowGrid}" Margin="5,0,5,0"
+                             Click="UpdateGridFromVM"/>
+                </StackPanel>
+            </Border>
         </Grid>
     </Grid>
 </Window>
