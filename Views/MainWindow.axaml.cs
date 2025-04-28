@@ -24,7 +24,7 @@ namespace GoodbyeDiplom.Views
         //Инициализация данных
         private double GridSize = 5;
         private bool _scaleCube = false;
-        private const int CubeSize = 7;
+        private int CubeSize = 7;
         private double _cellSize = 40;
         private Point _lastMousePosition;
         private double _angleX = 35 * Math.PI / 180;
@@ -38,14 +38,12 @@ namespace GoodbyeDiplom.Views
         public MainWindow()
         {
             InitializeComponent();
-            Title = "3D Function Surface (Z Vertical)";
+            canvas = MainCanvas;
+            Title = "3Ddiplom";
             Width = 800;
             Height = 600;
             var vm = new MainWindowViewModel();
             DataContext = vm;
-            // В конструкторе MainWindow
-            canvas = this.FindControl<Canvas>("MainCanvas");
-            colorPicker.Color = vm.SurfaceColor;
             // var button = this.FindControl<Button>("CreateFunction");
             PointerPressed += OnPointerPressed;
             PointerReleased += OnPointerReleased;
@@ -94,11 +92,38 @@ namespace GoodbyeDiplom.Views
             // 3. Рисуем поверхность функции (масштабируется)
             DrawFunctionSurface(centerX, centerY, fixedCellSize);
         }
+        private void OnFunctionExpressionChanged(object sender, TextChangedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
+            {
+                vm.SelectedFunction.Expression = ((TextBox)sender).Text;
+                vm.FunctionExpression = vm.SelectedFunction.Expression;
+                vm.UpdateFunction();
+                UpdateGrid();
+            }
+        }
+        private void OnFunctionStepSizeChanged(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
+            {
+                vm.SelectedFunction.StepSize = ((Slider)sender).Value;
+                vm.StepSize = vm.SelectedFunction.StepSize;
+                vm.UpdateFunction();
+                UpdateGrid();
+            }
+        }
+        private void OnFunctionColorChanged(object sender, ColorChangedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
+            {
+                vm.SelectedFunction.Color = e.NewColor;
+                vm.SurfaceColor = e.NewColor;
+                UpdateGrid();
+            }
+        }
         private void UpdateGridFromVM(object? sender, RoutedEventArgs e)
         {
             if (DataContext is not MainWindowViewModel vm) return;
-            var color = colorPicker.Color;
-            vm.UpdateColor(color);
             UpdateGrid();
         }
         private void UpdateGridEventHandler(object? sender, double isEvent)
@@ -375,13 +400,13 @@ namespace GoodbyeDiplom.Views
         // Команды для кнопок (масштабирование, вращение)
         public void ZoomIn_Click(object sender, RoutedEventArgs e)
         {
-            GridSize *= 0.9;
+            CubeSize = Math.Clamp(CubeSize + 1, 1, 20);
             UpdateGrid();
         }
 
         public void ZoomOut_Click(object sender, RoutedEventArgs e)
         {
-            GridSize *= 1.1;
+            CubeSize = Math.Clamp(CubeSize - 1, 1, 20);
             UpdateGrid();
         }
 
@@ -426,6 +451,8 @@ namespace GoodbyeDiplom.Views
         private void OnPointerMoved(object sender, PointerEventArgs e)
         {
             if (!_isDragging) return;
+            canvas.Children.Clear();
+
             var currentPosition = e.GetPosition(this);
             var delta = currentPosition - _lastMousePosition;
             
