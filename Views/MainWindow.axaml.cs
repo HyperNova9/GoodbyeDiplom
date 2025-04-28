@@ -17,6 +17,10 @@ using System.Threading.Tasks;
 using System.Reactive.Linq;
 using DynamicData.Binding;
 using System.Threading;
+using Avalonia.Media.Imaging;
+using System.Text.Json;
+using System.IO;
+using System.Collections.ObjectModel;
 namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
@@ -812,6 +816,133 @@ namespace GoodbyeDiplom.Views
             
             return new Point(x2d * cellSize, y2d * cellSize);
         }
+        private async void SaveToPng_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFileDialog = new SaveFileDialog
+            {
+                Title = "Сохранить как PNG",
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "PNG файлы", Extensions = new List<string> { "png" } },
+                    new FileDialogFilter { Name = "Все файлы", Extensions = new List<string> { "*" } }
+                },
+                DefaultExtension = "png"
+            };
 
+            var result = await saveFileDialog.ShowAsync(this);
+            if (result != null)
+            {
+                try
+                {
+                    var size = new Size(canvas.Bounds.Width, canvas.Bounds.Height);
+                    using (var renderTarget = new RenderTargetBitmap(new PixelSize((int)size.Width, (int)size.Height)))
+                    {
+                        canvas.Measure(size);
+                        canvas.Arrange(new Rect(size));
+                        renderTarget.Render(canvas);
+                        renderTarget.Save(result);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при сохранении PNG: {ex.Message}");
+                }
+            }
+        }
+        private JsonSerializerOptions jsonOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Converters = { new ColorJsonConverter(), new ColorSceneJsonConverter() }
+        };
+
+        private async void SaveToJson_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainWindowViewModel vm) return;
+            
+            var saveFileDialog = new SaveFileDialog
+            {
+                Title = "Сохранить как JSON",
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "JSON файлы", Extensions = new List<string> { "json" } },
+                    new FileDialogFilter { Name = "Все файлы", Extensions = new List<string> { "*" } }
+                },
+                DefaultExtension = "json"
+            };
+
+            var result = await saveFileDialog.ShowAsync(this);
+            if (result != null)
+            {
+                try
+                {
+                    var data = new FunctionData
+                    {
+                        Functions = new List<FunctionModel>(vm.Functions),
+                        ColorsScene = vm.ColorsScene,
+                        ShowAxes = vm.ShowAxes,
+                        ShowLabels = vm.ShowLabels,
+                        ShowCube = vm.ShowCube,
+                        ShowGrid = vm.ShowGrid,
+                        ShowGraphic = vm.ShowGraphic,
+                        GridSize = GridSize,
+                        AngleX = _angleX,
+                        AngleY = _angleY
+                    };
+
+                    var json = JsonSerializer.Serialize(data, jsonOptions);
+                    await File.WriteAllTextAsync(result, json);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при сохранении JSON: {ex.Message}");
+                }
+            }
+        }
+
+        private async void LoadFromJson_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog
+            {
+                Title = "Загрузить из JSON",
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "JSON файлы", Extensions = new List<string> { "json" } },
+                    new FileDialogFilter { Name = "Все файлы", Extensions = new List<string> { "*" } }
+                },
+                AllowMultiple = false
+            };
+
+            var result = await openFileDialog.ShowAsync(this);
+            if (result != null && result.Length > 0)
+            {
+                try
+                {
+                    var json = await File.ReadAllTextAsync(result[0]);
+                    var data = JsonSerializer.Deserialize<FunctionData>(json, jsonOptions);
+                    
+                    if (DataContext is MainWindowViewModel vm)
+                    {
+                        vm.Functions = new ObservableCollection<FunctionModel>(data.Functions);
+                        vm.ColorsScene = data.ColorsScene;
+                        vm.ShowAxes = data.ShowAxes;
+                        vm.ShowLabels = data.ShowLabels;
+                        vm.ShowCube = data.ShowCube;
+                        vm.ShowGrid = data.ShowGrid;
+                        vm.ShowGraphic = data.ShowGraphic;
+                        
+                        GridSize = data.GridSize;
+                        _angleX = data.AngleX;
+                        _angleY = data.AngleY;
+                        
+                        vm.SelectedFunction = vm.Functions.FirstOrDefault();
+                        UpdateGrid();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Ошибка при загрузке JSON: {ex.Message}");
+                }
+            }
+        }
     }
 }
