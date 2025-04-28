@@ -91,7 +91,8 @@ namespace GoodbyeDiplom.Views
                 DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z", centerX, centerY, fixedCellSize);
             }
             // 3. Рисуем поверхность функции (масштабируется)
-            DrawFunctionSurface(centerX, centerY, fixedCellSize);
+            if (vm.ShowGraphic)
+                DrawFunctionSurface(centerX, centerY, fixedCellSize);
         }
         private void OnFunctionExpressionChanged(object sender, TextChangedEventArgs e)
         {

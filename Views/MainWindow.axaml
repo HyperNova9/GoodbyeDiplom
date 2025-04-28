@@ -54,7 +54,8 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-           <Border Grid.Row="0" Margin="10" BorderBrush="#e3e3e3" BorderThickness="1" CornerRadius="4">
+           <Border Grid.Row="0" Margin="10" BorderBrush="#e3e3e3" 
+           BorderThickness="1" CornerRadius="4">
                 <StackPanel>
                     <TextBlock Text="Список функций" 
                             Margin="5" 
@@ -81,7 +82,7 @@
                 </StackPanel>
             </Border>
             <!-- Параметры выбранной функции -->
-            <Expander Grid.Row="1" Margin="5" Header="Параметры функции">
+            <Expander Grid.Row="1" Margin="5" Width="290" Header="Параметры функции">
                 <StackPanel>           
                     <TextBox Text="{Binding SelectedFunction.Name, Mode=TwoWay}"
                             Watermark="Название функции"
@@ -116,7 +117,7 @@
 
 
             <!-- Группа "Видимость элементов" -->
-            <Expander Grid.Row="2" Margin="5" Header="Видимость элементов">
+            <Expander Grid.Row="2" Margin="5" Width="290" Header="Видимость элементов">
                 <StackPanel>
                     <CheckBox Content="Оси координат" 
                             IsChecked="{Binding ShowAxes}" Margin="5,0,5,0"
@@ -130,9 +131,12 @@
                     <CheckBox Content="Координатная сетка" 
                             IsChecked="{Binding ShowGrid}" Margin="5,0,5,0"
                             Click="UpdateGridFromVM"/>
+                    <CheckBox Content="График поверхности" 
+                            IsChecked="{Binding ShowGraphic}" Margin="5,0,5,0"
+                            Click="UpdateGridFromVM"/>
                 </StackPanel>
             </Expander>
-            <Expander Grid.Row="3" Margin="5" Header="Изменение цвета сцены">
+            <Expander Grid.Row="3" Margin="5" Width="290" Header="Изменение цвета сцены">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
                         <StackPanel>

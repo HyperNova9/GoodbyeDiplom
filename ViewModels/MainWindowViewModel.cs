@@ -23,6 +23,7 @@ public class MainWindowViewModel : ViewModelBase
     private bool _showLabels = true;
     private bool _showCube = true;
     private bool _showGrid = true;
+    private bool _showGraphic = true;
     private ObservableCollection<FunctionModel> _functions = new();
     private FunctionModel _selectedFunction;
     public ObservableCollection<FunctionModel> Functions
@@ -176,7 +177,14 @@ public class MainWindowViewModel : ViewModelBase
             this.RaiseAndSetIfChanged(ref _showGrid, value);
         }
     }
-    
+    public bool ShowGraphic
+    {
+        get => _showGraphic;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _showGraphic, value);
+        }
+    }
     public double CalculateFunction(double x, double y) => _function?.Invoke(x, y) ?? 0;
     
     public void UpdateFunction()
