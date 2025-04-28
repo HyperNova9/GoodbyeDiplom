@@ -6,6 +6,7 @@ using Avalonia.Media;
 using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Avalonia.Controls;
 
 namespace GoodbyeDiplom.ViewModels;
 public class MainWindowViewModel : ViewModelBase
@@ -14,6 +15,8 @@ public class MainWindowViewModel : ViewModelBase
     private string _functionExpression = "sin(x) + cos(y)";
     private readonly MathExpressionParser _parser = new MathExpressionParser();
     public Func<double, double, double> _function;
+    public ColorScene _colorsScene;
+
     private Color _surfaceColor = Color.FromArgb(160, 0, 89, 179);
     private double _stepSize = 10;
     private bool _showAxes = true;
@@ -42,7 +45,14 @@ public class MainWindowViewModel : ViewModelBase
             }
         }
     }
-    
+    public ColorScene ColorsScene
+    {
+        get => _colorsScene;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _colorsScene, value);
+        }
+    }
     public bool HasSelectedFunction => SelectedFunction != null;
     
     public ReactiveCommand<Unit, Unit> AddFunctionCommand { get; }
@@ -64,6 +74,8 @@ public class MainWindowViewModel : ViewModelBase
             Color.FromArgb(160, 0, 89, 179), 
             10));
         SelectedFunction = Functions.FirstOrDefault();
+        ColorsScene = new ColorScene(Colors.Red, Colors.Blue, Colors.Green, 
+        Colors.Black, Colors.White, Color.FromArgb(80, 150, 150, 150));
         UpdateFunction();
 
     }

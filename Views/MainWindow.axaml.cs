@@ -63,6 +63,7 @@ namespace GoodbyeDiplom.Views
         private void UpdateGrid()
         {
             if (DataContext is not MainWindowViewModel vm) return;
+            canvas.Background = new SolidColorBrush(vm.ColorsScene.ColorBG);
             canvas.Children.Clear();
             _surfaceTriangles.Clear();
             double centerX = (Bounds.Width - 300) / 2;
@@ -85,9 +86,9 @@ namespace GoodbyeDiplom.Views
             // 4. Рисуем оси координат (статично) 
             if (vm.ShowAxes)
             {
-                DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, Brushes.Red, "X", centerX, centerY, fixedCellSize);
-                DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, Brushes.Green, "Y", centerX, centerY, fixedCellSize);
-                DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, Brushes.Blue, "Z", centerX, centerY, fixedCellSize);
+                DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X", centerX, centerY, fixedCellSize);
+                DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y", centerX, centerY, fixedCellSize);
+                DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z", centerX, centerY, fixedCellSize);
             }
             // 3. Рисуем поверхность функции (масштабируется)
             DrawFunctionSurface(centerX, centerY, fixedCellSize);
@@ -121,6 +122,13 @@ namespace GoodbyeDiplom.Views
                 UpdateGrid();
             }
         }
+        private void OnColorChanged(object sender, ColorChangedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
+            {
+                UpdateGrid();
+            }
+        }
         private void UpdateGridFromVM(object? sender, RoutedEventArgs e)
         {
             if (DataContext is not MainWindowViewModel vm) return;
@@ -143,13 +151,14 @@ namespace GoodbyeDiplom.Views
         private void DrawAxis(
             double x1, double y1, double z1,
             double x2, double y2, double z2,
-            IBrush color, string label,
+            Color input_color, string label,
             double centerX, double centerY, double cellSize)
         {
             if (DataContext is not MainWindowViewModel vm) return;
+
             var start = ProjectTo2D(x1, y1, z1, cellSize);
             var end = ProjectTo2D(x2, y2, z2, cellSize);
-            
+            var color = new SolidColorBrush(input_color);
             var line = new Line
             {
                 StartPoint = new Point(start.X + centerX, start.Y + centerY),
@@ -529,7 +538,8 @@ namespace GoodbyeDiplom.Views
         //Функция для отрисовки каркаса сетки
         private void DrawCubeFrame(double centerX, double centerY, double cellSize)
         {
-            Color frameColor = Colors.Black;
+            if (DataContext is not MainWindowViewModel vm) return;
+            Color frameColor = vm.ColorsScene.ColorCube;
             double thickness = 1.5;
 
             // Нижняя грань (z = -GridSize)
@@ -584,7 +594,9 @@ namespace GoodbyeDiplom.Views
         //Функция для отрисовки сетки на XY
         private void DrawXYPlane(double centerX, double centerY, double gridStep, double cellSize)
         {
-            Color gridColor = Color.FromArgb(80, 150, 150, 150);
+            if (DataContext is not MainWindowViewModel vm) return;
+            Color gridColor = vm.ColorsScene.ColorGrid;
+            Brush colorLabel = new SolidColorBrush(gridColor);
             gridStep = GridSize/gridStep;
             // Линии по X (z=0)
             for (double x = -GridSize; x <= GridSize; x += gridStep)
@@ -605,7 +617,7 @@ namespace GoodbyeDiplom.Views
 
                 // Подписи осей масштабируются (используем gridCellSize)
                 var labelPos = ProjectTo2D(x_norm, -0.1, 0, cellSize); // Масштабируем!
-                DrawLabel((x).ToString("0.##"), Brushes.Black, 
+                DrawLabel((x).ToString("0.##"), colorLabel, 
                 labelPos, centerX, centerY, horizontal: true);
             }
             
@@ -626,7 +638,7 @@ namespace GoodbyeDiplom.Views
                 canvas.Children.Add(line);
                 // Подписи оси Y
                 var labelPos = ProjectTo2D(0, y_norm, 0, cellSize);
-                DrawLabel(y.ToString("0.##"), Brushes.Black, labelPos, 
+                DrawLabel(y.ToString("0.##"), colorLabel, labelPos, 
                 centerX, centerY, horizontal: false);
             }
 

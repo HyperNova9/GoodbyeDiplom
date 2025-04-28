@@ -140,39 +140,45 @@
                             Margin="5" 
                             FontWeight="Bold"
                             Padding="5"/>
-                            <ColorPicker Width="60" Height="30"/>
+                            <ColorPicker Width="60" Height="30" Color="{Binding ColorsScene.ColorX, Mode=TwoWay}"
+                            ColorChanged="OnColorChanged"/>
                         </StackPanel>
                         <StackPanel>
                             <TextBlock Text="Y" 
                             Margin="5" 
                             FontWeight="Bold"
                             Padding="5"/>
-                            <ColorPicker Width="60" Height="30"/>
+                            <ColorPicker Width="60" Height="30" Color="{Binding ColorsScene.ColorY, Mode=TwoWay}"
+                            ColorChanged="OnColorChanged"/>
                         </StackPanel>
                         <StackPanel>
                             <TextBlock Text="Z" 
                             Margin="5" 
                             FontWeight="Bold"
                             Padding="5"/>
-                            <ColorPicker Width="60" Height="30"/>
+                            <ColorPicker Width="60" Height="30" Color="{Binding ColorsScene.ColorZ, Mode=TwoWay}"
+                            ColorChanged="OnColorChanged"/>
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Text="Цвет фона сцены" 
                         Margin="5" 
                         FontWeight="Bold"
                         Padding="5"/>
-                    <ColorPicker Width="120" Height="30"/>
+                    <ColorPicker Width="120" Height="30" Color="{Binding ColorsScene.ColorBG, Mode=TwoWay}"
+                    ColorChanged="OnColorChanged"/>
                     <TextBlock Text="Цвет кубического каркаса" 
                         Margin="5" 
                         FontWeight="Bold"
                         Padding="5"/>
-                    <ColorPicker Width="120" Height="30"/>
+                    <ColorPicker Width="120" Height="30" Color="{Binding ColorsScene.ColorCube, Mode=TwoWay}"
+                    ColorChanged="OnColorChanged"/>
                     <TextBlock Text="Цвет сетки" 
                         Margin="5" 
                         FontWeight="Bold"
                         Padding="5"/>
-                    <ColorPicker Width="120" Height="30"/>
-            </StackPanel>
+                    <ColorPicker Width="120" Height="30" Color="{Binding ColorsScene.ColorGrid, Mode=TwoWay}"
+                    ColorChanged="OnColorChanged"/>
+                </StackPanel>
             </Expander>
         </Grid>
     </Grid>
