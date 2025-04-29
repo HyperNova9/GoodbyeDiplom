@@ -1,0 +1,38 @@
+{
+  "Functions": [
+    {
+      "Name": "\u041F\u0440\u0438\u043C\u0435\u0440 1",
+      "Expression": "sin(x) \u002B cos(y)",
+      "Color": "#a00059b3",
+      "StepSize": 10
+    },
+    {
+      "Name": "\u0424\u0443\u043D\u043A\u0446\u0438\u044F 2",
+      "Expression": "0",
+      "Color": "#a0bbd444",
+      "StepSize": 10
+    },
+    {
+      "Name": "adwadawd",
+      "Expression": "x^2\u002By^2",
+      "Color": "#ffff1313",
+      "StepSize": 29.214999999999943
+    }
+  ],
+  "ColorsScene": {
+    "ColorX": "#ffff0500",
+    "ColorY": "#ffff2100",
+    "ColorZ": "#ffff4245",
+    "ColorCube": "Red",
+    "ColorBG": "#ff00ff6a",
+    "ColorGrid": "Red"
+  },
+  "ShowAxes": true,
+  "ShowLabels": true,
+  "ShowCube": true,
+  "ShowGrid": true,
+  "ShowGraphic": true,
+  "GridSize": 41.72997506030678,
+  "AngleX": -1.1571347618019834,
+  "AngleY": -14.201398163397405
+}
