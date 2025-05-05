@@ -118,12 +118,21 @@ namespace GoodbyeDiplom.Views
                 UpdateGrid();
             }
         }
-        private void OnFunctionColorChanged(object sender, ColorChangedEventArgs e)
+        private void OnFunctionColorStartChanged(object sender, ColorChangedEventArgs e)
         {
             if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
             {
-                vm.SelectedFunction.Color = e.NewColor;
-                vm.SurfaceColor = e.NewColor;
+                vm.SelectedFunction.ColorStart = e.NewColor;
+                vm.StartColor = e.NewColor;
+                UpdateGrid();
+            }
+        }
+        private void OnFunctionColorEndChanged(object sender, ColorChangedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
+            {
+                vm.SelectedFunction.ColorEnd = e.NewColor;
+                vm.EndColor = e.NewColor;
                 UpdateGrid();
             }
         }
@@ -683,7 +692,7 @@ namespace GoodbyeDiplom.Views
             else
                 step = GridSize / 10;
             //byte opacity = (byte)(vm.SurfaceOpacity * 255);
-            Color surfaceColor = vm.SurfaceColor;
+            Color surfaceColor;
             double discontinuityThreshold = GridSize * 2;
             // Масштабируем размер функции в соответствии с GridSize
             double scaleFactor = CubeSize / GridSize;
@@ -692,6 +701,10 @@ namespace GoodbyeDiplom.Views
             {
                 for (double y = -GridSize; y < GridSize; y += step)
                 {
+                    var color_h = 10;
+                    surfaceColor = vm.StartColor;
+
+                    var Zh = 2 * GridSize / color_h;
                     // Координаты в масштабе функции
                     double x1 = x * scaleFactor;
                     double y1 = y * scaleFactor;
@@ -708,13 +721,17 @@ namespace GoodbyeDiplom.Views
                     if (double.IsInfinity(z2)) continue;
                     if (double.IsInfinity(z3)) continue;
                     if (double.IsInfinity(z4)) continue;
-
+                    
                     // Вычисляем z для каждой точки
                     z1 = Math.Clamp(z1, -GridSize, GridSize) * scaleFactor;
                     z2 = Math.Clamp(z2, -GridSize, GridSize) * scaleFactor;
                     z3 = Math.Clamp(z3, -GridSize, GridSize) * scaleFactor;
                     z4 = Math.Clamp(z4, -GridSize, GridSize) * scaleFactor;
-
+                    var color1 = GradientColorCalculate(z1 / scaleFactor, Zh, color_h);
+                    var color2 = GradientColorCalculate(z2 / scaleFactor, Zh, color_h);
+                    var color3 = GradientColorCalculate(z3 / scaleFactor, Zh, color_h);
+                    var color4 = GradientColorCalculate(z4 / scaleFactor, Zh, color_h);
+                    
                     // Проецируем точки в 2D
                     var p1 = ProjectTo2D(x1, y1, z1, cellSize);
                     var p2 = ProjectTo2D(x2, y1, z2, cellSize);
@@ -730,7 +747,19 @@ namespace GoodbyeDiplom.Views
                                 new Point(p2.X + centerX, p2.Y + centerY),
                                 new Point(p3.X + centerX, p3.Y + centerY)
                             },
-                            Fill = new SolidColorBrush(surfaceColor),
+                            // Fill = new SolidColorBrush(surfaceColor),
+                            Fill = new RadialGradientBrush
+                            {
+                                GradientStops =
+                                {
+                                    new GradientStop { Color = color1, Offset = 0 },
+                                    new GradientStop { Color = color2, Offset = 0.5 },
+                                    new GradientStop { Color = color3, Offset = 1 }
+                                },
+                                Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                                GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                                Radius = 1
+                            },
                             Stroke = Brushes.Transparent,
                             Opacity = double.IsInfinity(z1) || double.IsInfinity(z2) || double.IsInfinity(z3) ? 0.5 : 1
                         };
@@ -742,7 +771,19 @@ namespace GoodbyeDiplom.Views
                                 new Point(p3.X + centerX, p3.Y + centerY),
                                 new Point(p4.X + centerX, p4.Y + centerY)
                             },
-                            Fill = new SolidColorBrush(surfaceColor),
+                            //Fill = new SolidColorBrush(surfaceColor),
+                            Fill = new RadialGradientBrush
+                            {
+                                GradientStops =
+                                {
+                                    new GradientStop { Color = color1, Offset = 0 },
+                                    new GradientStop { Color = color3, Offset = 0.5 },
+                                    new GradientStop { Color = color4, Offset = 1 }
+                                },
+                                Center = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                                GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+                                Radius = 1
+                            },
                             Stroke = Brushes.Transparent,
                             Opacity = double.IsInfinity(z1) || double.IsInfinity(z3) || double.IsInfinity(z4) ? 0.5 : 1
                         };
@@ -752,6 +793,39 @@ namespace GoodbyeDiplom.Views
                     }
                 }
             }
+        }
+        private Color GradientColorCalculate(double z, double Zh, double color_h)
+        {
+            if (!(DataContext is MainWindowViewModel vm)) return new Color(0,0,0,0);
+            var colorStart = vm.StartColor;
+            var colorEnd = vm.EndColor;
+            var color_R = colorStart.R;
+            var color_G = colorStart.G;
+            var color_B = colorStart.B;
+
+            var color_Rh = (byte) (Math.Abs(vm.StartColor.R - vm.EndColor.R)/color_h);
+            var color_Gh = (byte) (Math.Abs(vm.StartColor.G - vm.EndColor.G)/color_h);
+            var color_Bh = (byte) (Math.Abs(vm.StartColor.B - vm.EndColor.B)/color_h);
+
+            byte count = 0;
+            double z_start = -GridSize;
+            if (z > 4.9)
+            {
+                Console.WriteLine();
+            }
+
+            while (z_start+Zh <= z)
+            {
+                z_start += Zh;
+                if (color_R > colorEnd.R) color_R -= color_Rh;
+                else color_R += color_Rh;
+                if (color_G > colorEnd.G) color_G -= color_Gh;
+                else color_G += color_Gh;
+                if (color_B > colorEnd.B) color_B -= color_Bh;
+                else color_B += color_Bh;
+            }
+            return new Color(colorStart.A, color_R, color_G, color_B);
+
         }
         //Безопасный расчёт значения функции с учётом разрывов второго рода
         private double SafeCalculate(MainWindowViewModel vm, double x, double y, double threshold)

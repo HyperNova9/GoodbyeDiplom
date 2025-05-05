@@ -17,7 +17,8 @@ public class MainWindowViewModel : ViewModelBase
     public Func<double, double, double> _function;
     public ColorScene _colorsScene;
 
-    private Color _surfaceColor = Color.FromArgb(160, 0, 89, 179);
+    private Color _startColor = Color.FromArgb(160, 0, 0, 0);
+    private Color _endColor = Color.FromArgb(160, 255, 255, 255);
     private double _stepSize = 10;
     private bool _showAxes = true;
     private bool _showLabels = true;
@@ -40,7 +41,8 @@ public class MainWindowViewModel : ViewModelBase
             if (value != null)
             {
                 FunctionExpression = value.Expression;
-                SurfaceColor = value.Color;
+                StartColor = value.ColorStart;
+                EndColor = value.ColorEnd;
                 StepSize = value.StepSize;
                 UpdateFunction();
             }
@@ -72,7 +74,8 @@ public class MainWindowViewModel : ViewModelBase
         _functions.Add(new FunctionModel(
             "Пример 1", 
             "sin(x) + cos(y)", 
-            Color.FromArgb(160, 0, 89, 179), 
+            StartColor,
+            EndColor, 
             10));
         SelectedFunction = Functions.FirstOrDefault();
         ColorsScene = new ColorScene(Colors.Red, Colors.Blue, Colors.Green, 
@@ -85,7 +88,8 @@ public class MainWindowViewModel : ViewModelBase
         if (SelectedFunction != null)
         {
             FunctionExpression = SelectedFunction.Expression;
-            SurfaceColor = SelectedFunction.Color;
+            StartColor = SelectedFunction.ColorStart;
+            EndColor = SelectedFunction.ColorEnd;
             StepSize = SelectedFunction.StepSize;
             UpdateFunction();
             UpdateData?.Invoke(this, StepSize); // Уведомляем об изменении
@@ -96,6 +100,9 @@ public class MainWindowViewModel : ViewModelBase
         var newFunc = new FunctionModel(
             $"Функция {Functions.Count + 1}",
             "0",
+            Color.FromArgb(160, (byte)(new Random().Next(255)), 
+            (byte)(new Random().Next(255)), 
+            (byte)(new Random().Next(255))),
             Color.FromArgb(160, (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255))),
@@ -120,7 +127,8 @@ public class MainWindowViewModel : ViewModelBase
         if (SelectedFunction != null)
         {
             SelectedFunction.Expression = FunctionExpression;
-            SelectedFunction.Color = SurfaceColor;
+            SelectedFunction.ColorStart = StartColor;
+            SelectedFunction.ColorEnd = EndColor;
             SelectedFunction.StepSize = StepSize;
             UpdateFunction();
             UpdateData?.Invoke(this, StepSize); // Уведомляем об изменении
@@ -139,12 +147,16 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _functionExpression, value);
     }
     
-    public Color SurfaceColor
+    public Color StartColor
     {
-        get => _surfaceColor;
-        set => this.RaiseAndSetIfChanged(ref _surfaceColor, value);
+        get => _startColor;
+        set => this.RaiseAndSetIfChanged(ref _startColor, value);
     }
-    
+    public Color EndColor
+    {
+        get => _endColor;
+        set => this.RaiseAndSetIfChanged(ref _endColor, value);
+    }
     public double StepSize
     {
         get => _stepSize;
@@ -201,6 +213,6 @@ public class MainWindowViewModel : ViewModelBase
     }
     public void UpdateColor(Color color)
     {
-        SurfaceColor = color;
+        StartColor = color;
     }
 }

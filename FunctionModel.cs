@@ -7,7 +7,8 @@ public class FunctionModel : ViewModelBase
 {
     private string _name;
     private string _expression;
-    private Color _color;
+    private Color _colorStart;
+    private Color _colorEnd;
     private double _stepSize;
 
     public string Name
@@ -22,23 +23,28 @@ public class FunctionModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _expression, value);
     }
 
-    public Color Color
+    public Color ColorStart
     {
-        get => _color;
-        set => this.RaiseAndSetIfChanged(ref _color, value);
+        get => _colorStart;
+        set => this.RaiseAndSetIfChanged(ref _colorStart, value);
     }
-
+    public Color ColorEnd
+    {
+        get => _colorEnd;
+        set => this.RaiseAndSetIfChanged(ref _colorEnd, value);
+    }
     public double StepSize
     {
         get => _stepSize;
         set => this.RaiseAndSetIfChanged(ref _stepSize, value);
     }
 
-    public FunctionModel(string name, string expression, Color color, double stepSize)
+    public FunctionModel(string name, string expression, Color colorStart, Color colorEnd, double stepSize)
     {
         Name = name;
         Expression = expression;
-        Color = color;
+        ColorStart = colorStart;
+        ColorEnd = colorEnd;
         StepSize = stepSize;
     }
 }
