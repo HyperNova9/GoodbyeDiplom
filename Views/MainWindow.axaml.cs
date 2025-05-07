@@ -78,32 +78,52 @@ namespace GoodbyeDiplom.Views
 
             // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
             double DynamicStep = DynStepCalc(GridSize);
-            // 1. Рисуем кубический каркас (статично)
-            if (vm.ShowCube)
-                DrawCubeFrame(centerX, centerY, fixedCellSize);
             
-            // 2. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
+            // 1. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
             if (vm.ShowGrid)
                 DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
             
             
-            // 4. Рисуем оси координат (статично) 
+            // 2. Рисуем оси координат (статично) 
             if (vm.ShowAxes)
             {
                 DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X", centerX, centerY, fixedCellSize);
                 DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y", centerX, centerY, fixedCellSize);
                 DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z", centerX, centerY, fixedCellSize);
             }
-            // 3. Рисуем поверхность функции (масштабируется)
+            // 3. Рисуем поверхность(-и) функции(-й) (масштабируется)
             if (vm.ShowGraphic)
-                DrawFunctionSurface(centerX, centerY, fixedCellSize);
+            {
+                var temp = vm.FunctionExpression;
+                foreach (var f in vm.Functions)
+                {
+                    if (f.IsVisible && f != vm.SelectedFunction)
+                    {
+                        vm.FunctionExpression = f.Expression;
+                        vm.UpdateFunction();
+                        DrawFunctionSurface(centerX, centerY, fixedCellSize, f);
+                    }
+                    
+                }
+                if (vm.SelectedFunction != null && vm.SelectedFunction.IsVisible) 
+                {
+                    vm.FunctionExpression = vm.SelectedFunction.Expression;
+                    vm.UpdateFunction();
+                    DrawFunctionSurface(centerX, centerY, fixedCellSize, vm.SelectedFunction);
+                }  
+                vm.FunctionExpression = temp;
+                vm.UpdateFunction();        
+            }
+            // 4. Рисуем кубический каркас (статично)
+            if (vm.ShowCube)
+                DrawCubeFrame(centerX, centerY, fixedCellSize);
         }
         private void OnFunctionExpressionChanged(object sender, TextChangedEventArgs e)
         {
             if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
             {
                 vm.SelectedFunction.Expression = ((TextBox)sender).Text;
-                vm.FunctionExpression = vm.SelectedFunction.Expression;
+                //vm.FunctionExpression = vm.SelectedFunction.Expression;
                 vm.UpdateFunction();
                 UpdateGrid();
             }
@@ -114,6 +134,16 @@ namespace GoodbyeDiplom.Views
             {
                 vm.SelectedFunction.StepSize = ((Slider)sender).Value;
                 vm.StepSize = vm.SelectedFunction.StepSize;
+                vm.UpdateFunction();
+                UpdateGrid();
+            }
+        }
+        private void OnFunctionStepColorChanged(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
+            {
+                vm.SelectedFunction.StepColor = ((Slider)sender).Value;
+                vm.StepColor = vm.SelectedFunction.StepColor;
                 vm.UpdateFunction();
                 UpdateGrid();
             }
@@ -683,12 +713,12 @@ namespace GoodbyeDiplom.Views
             canvas.Children.Add(textBlock);
         }
         //Функция для отрисовки графика двумерной функции z(x,y)
-        private void DrawFunctionSurface(double centerX, double centerY, double cellSize)
+        private void DrawFunctionSurface(double centerX, double centerY, double cellSize, FunctionModel f)
         {
             if (!(DataContext is MainWindowViewModel vm)) return;
             double step;
             if (!_isMoved)
-                step = GridSize / vm.StepSize;
+                step = GridSize / f.StepSize;
             else
                 step = GridSize / 10;
             //byte opacity = (byte)(vm.SurfaceOpacity * 255);
@@ -701,8 +731,8 @@ namespace GoodbyeDiplom.Views
             {
                 for (double y = -GridSize; y < GridSize; y += step)
                 {
-                    var color_h = 10;
-                    surfaceColor = vm.StartColor;
+                    var color_h = f.StepColor;
+                    surfaceColor = f.ColorStart;
 
                     var Zh = 2 * GridSize / color_h;
                     // Координаты в масштабе функции
@@ -727,10 +757,10 @@ namespace GoodbyeDiplom.Views
                     z2 = Math.Clamp(z2, -GridSize, GridSize) * scaleFactor;
                     z3 = Math.Clamp(z3, -GridSize, GridSize) * scaleFactor;
                     z4 = Math.Clamp(z4, -GridSize, GridSize) * scaleFactor;
-                    var color1 = GradientColorCalculate(z1 / scaleFactor, Zh, color_h);
-                    var color2 = GradientColorCalculate(z2 / scaleFactor, Zh, color_h);
-                    var color3 = GradientColorCalculate(z3 / scaleFactor, Zh, color_h);
-                    var color4 = GradientColorCalculate(z4 / scaleFactor, Zh, color_h);
+                    var color1 = GradientColorCalculate(z1 / scaleFactor, Zh, color_h, f);
+                    var color2 = GradientColorCalculate(z2 / scaleFactor, Zh, color_h, f);
+                    var color3 = GradientColorCalculate(z3 / scaleFactor, Zh, color_h, f);
+                    var color4 = GradientColorCalculate(z4 / scaleFactor, Zh, color_h, f);
                     
                     // Проецируем точки в 2D
                     var p1 = ProjectTo2D(x1, y1, z1, cellSize);
@@ -794,18 +824,18 @@ namespace GoodbyeDiplom.Views
                 }
             }
         }
-        private Color GradientColorCalculate(double z, double Zh, double color_h)
+        private Color GradientColorCalculate(double z, double Zh, double color_h, FunctionModel f)
         {
             if (!(DataContext is MainWindowViewModel vm)) return new Color(0,0,0,0);
-            var colorStart = vm.StartColor;
-            var colorEnd = vm.EndColor;
+            var colorStart = f.ColorStart;
+            var colorEnd = f.ColorEnd;
             var color_R = colorStart.R;
             var color_G = colorStart.G;
             var color_B = colorStart.B;
 
-            var color_Rh = (byte) (Math.Abs(vm.StartColor.R - vm.EndColor.R)/color_h);
-            var color_Gh = (byte) (Math.Abs(vm.StartColor.G - vm.EndColor.G)/color_h);
-            var color_Bh = (byte) (Math.Abs(vm.StartColor.B - vm.EndColor.B)/color_h);
+            var color_Rh = (byte) (Math.Abs(colorStart.R - colorEnd.R)/color_h);
+            var color_Gh = (byte) (Math.Abs(colorStart.G - colorEnd.G)/color_h);
+            var color_Bh = (byte) (Math.Abs(colorStart.B - colorEnd.B)/color_h);
 
             byte count = 0;
             double z_start = -GridSize;

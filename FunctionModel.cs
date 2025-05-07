@@ -10,6 +10,9 @@ public class FunctionModel : ViewModelBase
     private Color _colorStart;
     private Color _colorEnd;
     private double _stepSize;
+    private double _stepColor;
+    private bool _isVisible;
+    
 
     public string Name
     {
@@ -38,13 +41,25 @@ public class FunctionModel : ViewModelBase
         get => _stepSize;
         set => this.RaiseAndSetIfChanged(ref _stepSize, value);
     }
-
-    public FunctionModel(string name, string expression, Color colorStart, Color colorEnd, double stepSize)
+    public double StepColor
+    {
+        get => _stepColor;
+        set => this.RaiseAndSetIfChanged(ref _stepColor, value);
+    }
+    public bool IsVisible
+    {
+        get => _isVisible;
+        set => this.RaiseAndSetIfChanged(ref _isVisible, value);
+    }
+    public FunctionModel(string name, string expression, Color colorStart, Color colorEnd, 
+    double stepSize, double stepColor, bool isVisible)
     {
         Name = name;
         Expression = expression;
         ColorStart = colorStart;
         ColorEnd = colorEnd;
         StepSize = stepSize;
+        StepColor = stepColor;
+        IsVisible = isVisible;
     }
 }

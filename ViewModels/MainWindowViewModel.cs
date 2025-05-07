@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Avalonia.Controls;
+using GoodbyeDiplom.Views;
 
 namespace GoodbyeDiplom.ViewModels;
 public class MainWindowViewModel : ViewModelBase
@@ -20,6 +21,7 @@ public class MainWindowViewModel : ViewModelBase
     private Color _startColor = Color.FromArgb(160, 0, 0, 0);
     private Color _endColor = Color.FromArgb(160, 255, 255, 255);
     private double _stepSize = 10;
+    private double _stepColor = 10;
     private bool _showAxes = true;
     private bool _showLabels = true;
     private bool _showCube = true;
@@ -44,6 +46,7 @@ public class MainWindowViewModel : ViewModelBase
                 StartColor = value.ColorStart;
                 EndColor = value.ColorEnd;
                 StepSize = value.StepSize;
+                StepColor = value.StepColor;
                 UpdateFunction();
             }
         }
@@ -60,40 +63,25 @@ public class MainWindowViewModel : ViewModelBase
     
     public ReactiveCommand<Unit, Unit> AddFunctionCommand { get; }
     public ReactiveCommand<Unit, Unit> RemoveFunctionCommand { get; }
-    public ReactiveCommand<Unit, Unit> ApplyFunctionCommand { get; }
     public MainWindowViewModel()
     {
         // Инициализация команд
         AddFunctionCommand = ReactiveCommand.Create(AddFunction);
         RemoveFunctionCommand = ReactiveCommand.Create(RemoveFunction);
-        ApplyFunctionCommand = ReactiveCommand.Create(ApplyFunction);
-        // Подписка на изменения
-        this.WhenAnyValue(x => x.SelectedFunction)
-            .Subscribe(_ => UpdateFunctionAndGrid());
         // Добавим пример функции по умолчанию
         _functions.Add(new FunctionModel(
             "Пример 1", 
             "sin(x) + cos(y)", 
             StartColor,
             EndColor, 
-            10));
+            10,
+            10,
+            true));
         SelectedFunction = Functions.FirstOrDefault();
         ColorsScene = new ColorScene(Colors.Red, Colors.Blue, Colors.Green, 
         Colors.Black, Colors.White, Color.FromArgb(80, 150, 150, 150));
         UpdateFunction();
 
-    }
-    private void UpdateFunctionAndGrid()
-    {
-        if (SelectedFunction != null)
-        {
-            FunctionExpression = SelectedFunction.Expression;
-            StartColor = SelectedFunction.ColorStart;
-            EndColor = SelectedFunction.ColorEnd;
-            StepSize = SelectedFunction.StepSize;
-            UpdateFunction();
-            UpdateData?.Invoke(this, StepSize); // Уведомляем об изменении
-        }
     }
     private void AddFunction()
     {
@@ -106,7 +94,9 @@ public class MainWindowViewModel : ViewModelBase
             Color.FromArgb(160, (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255))),
-            10);
+            10,
+            10,
+            false);
         
         Functions.Add(newFunc);
         SelectedFunction = Functions.FirstOrDefault();
@@ -118,22 +108,9 @@ public class MainWindowViewModel : ViewModelBase
         {
             Functions.Remove(SelectedFunction);
             SelectedFunction = null;
-            UpdateData?.Invoke(this, StepSize); // Уведомляем об изменении
         }
     }
     
-    private void ApplyFunction()
-    {
-        if (SelectedFunction != null)
-        {
-            SelectedFunction.Expression = FunctionExpression;
-            SelectedFunction.ColorStart = StartColor;
-            SelectedFunction.ColorEnd = EndColor;
-            SelectedFunction.StepSize = StepSize;
-            UpdateFunction();
-            UpdateData?.Invoke(this, StepSize); // Уведомляем об изменении
-        }
-    }
     public event EventHandler<double> UpdateData;
     public string GridCoordinates
     {
@@ -162,7 +139,11 @@ public class MainWindowViewModel : ViewModelBase
         get => _stepSize;
         set => this.RaiseAndSetIfChanged(ref _stepSize, value);
     }
-    
+    public double StepColor
+    {
+        get => _stepColor;
+        set => this.RaiseAndSetIfChanged(ref _stepColor, value);
+    }
     public bool ShowAxes
     {
         get => _showAxes;
