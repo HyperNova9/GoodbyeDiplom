@@ -137,7 +137,7 @@ namespace GoodbyeDiplom.Views
             //     bool isVisible = true;
             //     foreach (var existing in canvas.Children.OfType<Polygon>())
             //     {
-            //         if (PolygonsIntersect(poly.triangle, existing))
+            //         if (PolygonsIntersect(poly, existing))
             //         {
             //             isVisible = false;
             //             break;
@@ -151,12 +151,16 @@ namespace GoodbyeDiplom.Views
             // }
         }
 
-        private bool PolygonsIntersect(Polygon poly1, Polygon poly2)
+        private bool PolygonsIntersect(Polygons poly1, Polygon existing)
         {
             // Получаем точки полигонов
-            var points1 = poly1.Points.ToArray();
-            var points2 = poly2.Points.ToArray();
+            var middleP = poly1.middlePoint;
+            var CameraPos = CalculateCameraPosition();
+            var Vec = new Point3D(CameraPos.X - middleP.X, 
+            CameraPos.Y - middleP.Y, CameraPos.Z - middleP.Z);
             
+            var p = existing.Points.ToArray();
+            // var V1 = new Point3D(p[1].X - p[0].X, p[1].Y - p[0].Y, p[1].Z - p[0].Z);
             return false;
         }
         
@@ -779,6 +783,15 @@ namespace GoodbyeDiplom.Views
             
             return Math.Min(Math.Min(dist1, dist2), dist3);
         }
+        private Point3D MiddlePointCalc(double x1, double x2, double x3, 
+        double y1, double y2, double y3, 
+        double z1, double z2, double z3)
+        {
+            double x = (x1 + x2 + x3) / 3;
+            double y = (y1 + y2 + y3) / 3;
+            double z = (z1 + z2 + z3) / 3;
+            return new Point3D(x, y, z);
+        }
         private Point3D CalculateCameraPosition()
         {
             //double scaleFactor = CubeSize / GridSize;
@@ -856,8 +869,11 @@ namespace GoodbyeDiplom.Views
                     y1, y1, y2, z1, z2, z3, CameraPos);
                     double tr2_dist = DistanceCalc(x1, x2, x1,
                     y1, y2, y2, z1, z3, z4, CameraPos);
-;
-                    
+
+                    var tr1_middleP = MiddlePointCalc(x1, x2, x2, 
+                    y1, y1, y2, z1, z2, z3);
+                    var tr2_middleP = MiddlePointCalc(x1, x2, x1,
+                    y1, y2, y2, z1, z3, z4);
                     //Обработка разрывов
                     //if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10))
                     {
@@ -908,8 +924,8 @@ namespace GoodbyeDiplom.Views
                             Stroke = Brushes.Transparent,
                             Opacity = double.IsInfinity(z1) || double.IsInfinity(z3) || double.IsInfinity(z4) ? 0.5 : 1
                         };
-                        var triangle_poly1 = new Polygons(triangle1, tr1_dist);
-                        var triangle_poly2 = new Polygons(triangle2, tr2_dist);
+                        var triangle_poly1 = new Polygons(triangle1, tr1_dist, tr1_middleP);
+                        var triangle_poly2 = new Polygons(triangle2, tr2_dist, tr2_middleP);
                         polygons.Add(triangle_poly1);
                         polygons.Add(triangle_poly2);
                         //canvas.Children.Add(triangle1);

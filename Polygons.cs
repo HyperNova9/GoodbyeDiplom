@@ -10,10 +10,11 @@ public class Polygons : ViewModelBase
     public Polygon triangle;
     public double distance = 0;
     public Point3D middlePoint;
-    public Polygons(Polygon triangle, double distance)
+    public Polygons(Polygon triangle, double distance, Point3D middlePoint)
     {
         this.triangle = triangle;
         this.distance = distance;
+        this.middlePoint = middlePoint;
     }
 
 }
