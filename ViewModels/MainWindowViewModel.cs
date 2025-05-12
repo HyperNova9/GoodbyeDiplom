@@ -79,7 +79,7 @@ public class MainWindowViewModel : ViewModelBase
             true));
         SelectedFunction = Functions.FirstOrDefault();
         ColorsScene = new ColorScene(Colors.Red, Colors.Blue, Colors.Green, 
-        Colors.Black, Colors.White, Color.FromArgb(80, 150, 150, 150));
+        Colors.Black, Colors.White, Color.FromArgb(255, 150, 150, 150));
         UpdateFunction();
 
     }
@@ -88,10 +88,10 @@ public class MainWindowViewModel : ViewModelBase
         var newFunc = new FunctionModel(
             $"Функция {Functions.Count + 1}",
             "0",
-            Color.FromArgb(160, (byte)(new Random().Next(255)), 
+            Color.FromArgb(255, (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255))),
-            Color.FromArgb(160, (byte)(new Random().Next(255)), 
+            Color.FromArgb(255, (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255)), 
             (byte)(new Random().Next(255))),
             10,

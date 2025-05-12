@@ -21,6 +21,7 @@ using Avalonia.Media.Imaging;
 using System.Text.Json;
 using System.IO;
 using System.Collections.ObjectModel;
+using Avalonia.Input.GestureRecognizers;
 namespace GoodbyeDiplom.Views
 {
     public partial class MainWindow : Window
@@ -31,6 +32,7 @@ namespace GoodbyeDiplom.Views
         private int CubeSize = 7;
         private double _cellSize = 40;
         private Point _lastMousePosition;
+        private ICollection<Polygons> polygons;
         private double _angleX = 35 * Math.PI / 180;
         private double _angleY = -45 * Math.PI / 180;
         private bool _isDragging;
@@ -38,10 +40,10 @@ namespace GoodbyeDiplom.Views
         private bool _isWheeling = false;
         private DispatcherTimer WheelTimer;
         Canvas canvas;
-        private List<Shape> _surfaceTriangles = new List<Shape>();
         public MainWindow()
         {
             InitializeComponent();
+            polygons = new Collection<Polygons>();
             canvas = MainCanvas;
             Title = "3Ddiplom";
             Width = 800;
@@ -69,7 +71,7 @@ namespace GoodbyeDiplom.Views
             if (DataContext is not MainWindowViewModel vm) return;
             canvas.Background = new SolidColorBrush(vm.ColorsScene.ColorBG);
             canvas.Children.Clear();
-            _surfaceTriangles.Clear();
+            polygons.Clear();
             double centerX = (Bounds.Width - 300) / 2;
             double centerY = Bounds.Height / 2;
 
@@ -112,12 +114,57 @@ namespace GoodbyeDiplom.Views
                     DrawFunctionSurface(centerX, centerY, fixedCellSize, vm.SelectedFunction);
                 }  
                 vm.FunctionExpression = temp;
-                vm.UpdateFunction();        
+                vm.UpdateFunction();
+                PolygonsSort();
+                Console.WriteLine(polygons.Count); 
+                ShowPolygons();       
             }
+
             // 4. Рисуем кубический каркас (статично)
             if (vm.ShowCube)
                 DrawCubeFrame(centerX, centerY, fixedCellSize);
         }
+        private void ShowPolygons()
+        {
+            foreach (var poly in polygons)
+            {
+                
+                canvas.Children.Add(poly.triangle);
+            }
+            // foreach (var poly in polygons)
+            // {
+            //     // Проверяем пересечение с уже отрисованными полигонами
+            //     bool isVisible = true;
+            //     foreach (var existing in canvas.Children.OfType<Polygon>())
+            //     {
+            //         if (PolygonsIntersect(poly.triangle, existing))
+            //         {
+            //             isVisible = false;
+            //             break;
+            //         }
+            //     }
+                
+            //     if (isVisible)
+            //     {
+            //         canvas.Children.Add(poly.triangle);
+            //     }
+            // }
+        }
+
+        private bool PolygonsIntersect(Polygon poly1, Polygon poly2)
+        {
+            // Получаем точки полигонов
+            var points1 = poly1.Points.ToArray();
+            var points2 = poly2.Points.ToArray();
+            
+            return false;
+        }
+        
+        private void PolygonsSort()
+        {
+            polygons = polygons.OrderByDescending(p => p.distance).ToList();
+        }
+
         private void OnFunctionExpressionChanged(object sender, TextChangedEventArgs e)
         {
             if (DataContext is MainWindowViewModel vm && vm.SelectedFunction != null)
@@ -712,9 +759,44 @@ namespace GoodbyeDiplom.Views
 
             canvas.Children.Add(textBlock);
         }
+        private double DistanceCalc(double x1, double x2, double x3, 
+        double y1, double y2, double y3, 
+        double z1, double z2, double z3, 
+        Point3D cameraPos)
+        {
+            // Используем ближайшую точку треугольника к камере
+            double dist1 = Math.Sqrt(Math.Pow(cameraPos.X - x1, 2) + 
+                                    Math.Pow(cameraPos.Y - y1, 2) + 
+                                    Math.Pow(cameraPos.Z - z1, 2));
+            
+            double dist2 = Math.Sqrt(Math.Pow(cameraPos.X - x2, 2) + 
+                                    Math.Pow(cameraPos.Y - y2, 2) + 
+                                    Math.Pow(cameraPos.Z - z2, 2));
+            
+            double dist3 = Math.Sqrt(Math.Pow(cameraPos.X - x3, 2) + 
+                                    Math.Pow(cameraPos.Y - y3, 2) + 
+                                    Math.Pow(cameraPos.Z - z3, 2));
+            
+            return Math.Min(Math.Min(dist1, dist2), dist3);
+        }
+        private Point3D CalculateCameraPosition()
+        {
+            //double scaleFactor = CubeSize / GridSize;
+            // Предполагаем расстояние до камеры 1 единицу
+            double distance = 10;
+
+            
+            // Вычисляем позицию камеры в сферических координатах
+            double x = distance * Math.Cos(_angleX) * Math.Sin(_angleY);
+            double y = distance * Math.Cos(_angleX) * Math.Cos(_angleY);
+            double z = distance * Math.Sin(_angleX);
+
+            return new Point3D(x, -y, z);
+        }
         //Функция для отрисовки графика двумерной функции z(x,y)
         private void DrawFunctionSurface(double centerX, double centerY, double cellSize, FunctionModel f)
         {
+            var CameraPos = CalculateCameraPosition();
             if (!(DataContext is MainWindowViewModel vm)) return;
             double step;
             if (!_isMoved)
@@ -751,12 +833,14 @@ namespace GoodbyeDiplom.Views
                     if (double.IsInfinity(z2)) continue;
                     if (double.IsInfinity(z3)) continue;
                     if (double.IsInfinity(z4)) continue;
+
                     
                     // Вычисляем z для каждой точки
                     z1 = Math.Clamp(z1, -GridSize, GridSize) * scaleFactor;
                     z2 = Math.Clamp(z2, -GridSize, GridSize) * scaleFactor;
                     z3 = Math.Clamp(z3, -GridSize, GridSize) * scaleFactor;
                     z4 = Math.Clamp(z4, -GridSize, GridSize) * scaleFactor;
+
                     var color1 = GradientColorCalculate(z1 / scaleFactor, Zh, color_h, f);
                     var color2 = GradientColorCalculate(z2 / scaleFactor, Zh, color_h, f);
                     var color3 = GradientColorCalculate(z3 / scaleFactor, Zh, color_h, f);
@@ -767,6 +851,13 @@ namespace GoodbyeDiplom.Views
                     var p2 = ProjectTo2D(x2, y1, z2, cellSize);
                     var p3 = ProjectTo2D(x2, y2, z3, cellSize);
                     var p4 = ProjectTo2D(x1, y2, z4, cellSize);
+
+                    double tr1_dist = DistanceCalc(x1, x2, x2,
+                    y1, y1, y2, z1, z2, z3, CameraPos);
+                    double tr2_dist = DistanceCalc(x1, x2, x1,
+                    y1, y2, y2, z1, z3, z4, CameraPos);
+;
+                    
                     //Обработка разрывов
                     //if (!ShouldSkipPolygon(p1, p2, p3, p4, cellSize * 10))
                     {
@@ -817,9 +908,12 @@ namespace GoodbyeDiplom.Views
                             Stroke = Brushes.Transparent,
                             Opacity = double.IsInfinity(z1) || double.IsInfinity(z3) || double.IsInfinity(z4) ? 0.5 : 1
                         };
-
-                        canvas.Children.Add(triangle1);
-                        canvas.Children.Add(triangle2);
+                        var triangle_poly1 = new Polygons(triangle1, tr1_dist);
+                        var triangle_poly2 = new Polygons(triangle2, tr2_dist);
+                        polygons.Add(triangle_poly1);
+                        polygons.Add(triangle_poly2);
+                        //canvas.Children.Add(triangle1);
+                        //canvas.Children.Add(triangle2);
                     }
                 }
             }
@@ -876,22 +970,22 @@ namespace GoodbyeDiplom.Views
             }
         }
         //Ещё один обработчки разрывов
-        private bool ShouldSkipPolygon(Point p1, Point p2, Point p3, Point p4, double maxDistance)
-        {
-            // Увеличиваем максимальное допустимое расстояние между точками
-            if (DistanceBetween(p1, p2) > maxDistance) return true;
-            if (DistanceBetween(p2, p3) > maxDistance) return true;
-            if (DistanceBetween(p3, p4) > maxDistance) return true;
-            if (DistanceBetween(p4, p1) > maxDistance) return true;
-            return false;
-        }
+        // private bool ShouldSkipPolygon(Point p1, Point p2, Point p3, Point p4, double maxDistance)
+        // {
+        //     // Увеличиваем максимальное допустимое расстояние между точками
+        //     if (DistanceBetween(p1, p2) > maxDistance) return true;
+        //     if (DistanceBetween(p2, p3) > maxDistance) return true;
+        //     if (DistanceBetween(p3, p4) > maxDistance) return true;
+        //     if (DistanceBetween(p4, p1) > maxDistance) return true;
+        //     return false;
+        // }
         //Функция для расчёта расстояния между точками
         private double DistanceBetween(Point a, Point b)
         {
             return Math.Sqrt(Math.Pow(a.X - b.X, 2) + Math.Pow(a.Y - b.Y, 2));
         }
         //Структура 3D точки
-        private struct Point3D
+        public struct Point3D
         {
             public double X { get; }
             public double Y { get; }
