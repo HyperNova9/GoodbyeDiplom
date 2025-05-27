@@ -60,13 +60,21 @@ namespace GoodbyeDiplom.Views
             PointerMoved += (s, e) => UpdateMouseCoordinates(e);
             OnChangedValues();
         }
+        private void ColorsSceneWindow_Click(object sender, RoutedEventArgs e)
+        {
+            var colorsScene = new ColorsScene(this)
+            {
+                DataContext = this.DataContext // Передаём тот же DataContext
+            };
+            colorsScene.Show();
+        }
         private void OnChangedValues()
         {
             if (DataContext is not MainWindowViewModel vm) return;
             vm.UpdateData += UpdateGridEventHandler;
         }
         //Перерисовка и отрисовка сетки
-        private void UpdateGrid()
+        public void UpdateGrid()
         {
             if (DataContext is not MainWindowViewModel vm) return;
             canvas.Background = new SolidColorBrush(vm.ColorsScene.ColorBG);

@@ -27,6 +27,7 @@ public class MainWindowViewModel : ViewModelBase
     private bool _showCube = true;
     private bool _showGrid = true;
     private bool _showGraphic = true;
+    private bool _isDarkMode= false;
     private ObservableCollection<FunctionModel> _functions = new();
     private FunctionModel _selectedFunction;
     public ObservableCollection<FunctionModel> Functions
@@ -155,7 +156,11 @@ public class MainWindowViewModel : ViewModelBase
         get => _showLabels;
         set => this.RaiseAndSetIfChanged(ref _showLabels, value);
     }
-    
+    public bool IsDarkMode
+    {
+        get => _isDarkMode;
+        set => this.RaiseAndSetIfChanged(ref _isDarkMode, value);
+    }
     public bool ShowCube
     {
         get => _showCube;

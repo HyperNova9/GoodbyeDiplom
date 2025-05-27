@@ -24,5 +24,8 @@ build_property.EnableCodeStyleSeverity =
 [c:/Users/HyperNova/OneDrive/Desktop/GitProjects/GoodbyeDiplom/App.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
+[c:/Users/HyperNova/OneDrive/Desktop/GitProjects/GoodbyeDiplom/Views/ColorsScene.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
 [c:/Users/HyperNova/OneDrive/Desktop/GitProjects/GoodbyeDiplom/Views/MainWindow.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
