@@ -12,21 +12,125 @@
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
+    <Window.Styles>
+       <Style Selector="Expander">
+            <Setter Property="Background" Value="{DynamicResource PanelBackgroundColor}" />
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Header -->
+                            <Border Name="headerBorder"
+                                    Grid.Row="0"
+                                    Background="Transparent">
+                                <ToggleButton Name="toggleButton"
+                                            Background="Transparent"
+                                            BorderBrush="Transparent"
+                                            Foreground="{TemplateBinding Foreground}"
+                                            Content="{TemplateBinding Header}"
+                                            HorizontalContentAlignment="Stretch"
+                                            VerticalContentAlignment="Center"
+                                            IsChecked="{Binding $parent[Expander].IsExpanded, Mode=TwoWay}">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <!-- Arrow icon -->
+                                                <Path Name="arrow"
+                                                    Grid.Column="0"
+                                                    Width="10"
+                                                    Height="6"
+                                                    Margin="5,0,5,0"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Data="M 0 0 L 5 5 L 10 0 Z"
+                                                    Fill="{TemplateBinding Foreground}">
+                                                    <Path.RenderTransform>
+                                                        <RotateTransform Angle="0" />
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                                
+                                                <!-- Header content -->
+                                                <ContentPresenter Name="contentPresenter"
+                                                                Grid.Column="1"
+                                                                Content="{TemplateBinding Content}"
+                                                                HorizontalAlignment="Stretch"
+                                                                VerticalAlignment="Center"
+                                                                Margin="0,5"/>
+                                            </Grid>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                </ToggleButton>
+                            </Border>
+                                
+                                <!-- Content -->
+                            <ContentPresenter Name="contentSite"
+                                            Grid.Row="1"
+                                            Background="{DynamicResource PanelBackgroundColor}"
+                                            Content="{TemplateBinding Content}"
+                                            IsVisible="{Binding $parent[Expander].IsExpanded}"
+                                            Margin="5"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+
+        <!-- Стиль для состояния раскрытия Expander -->
+        <Style Selector="Expander:expanded /template/ ToggleButton#toggleButton Path#arrow">
+            <Setter Property="RenderTransform">
+                <RotateTransform Angle="180" />
+            </Setter>
+        </Style>
+        <!-- Стиль для TextBox -->
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="{DynamicResource TextBoxBackgroundColor}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBoxForegroundColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        
+        <!-- Стиль для Watermark (подсказки) -->
+        <Style Selector="TextBox:watermark">
+            <Setter Property="Foreground" Value="{DynamicResource TextBoxWatermarkColor}" />
+        </Style>
+    </Window.Styles>
     <Window.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
                 <!-- Светлая тема по умолчанию -->
-                <ResourceDictionary>
-                    <Color x:Key="BackgroundColor">#F5F5F5</Color>
-                    <Color x:Key="ForegroundColor">#212121</Color>
-                    <Color x:Key="PanelBackgroundColor">#FFFFFF</Color>
-                    <Color x:Key="BorderColor">#E3E3E3</Color>
-                    <Color x:Key="StatusBarColor">#EEEEEE</Color>
-                </ResourceDictionary>
-            </ResourceDictionary.MergedDictionaries>
+                <Color x:Key="BackgroundColor">#F5F5F5</Color>
+                <Color x:Key="ForegroundColor">#212121</Color>
+                <Color x:Key="PanelBackgroundColor">#FFFFFF</Color>
+                <Color x:Key="BorderColor">#E3E3E3</Color>
+                <Color x:Key="StatusBarColor">#EEEEEE</Color>
+                <!-- Стили TextBox -->
+                <Color x:Key="TextBoxBackgroundColor">White</Color>
+                <Color x:Key="TextBoxForegroundColor">Black</Color>
+                <Color x:Key="TextBoxWatermarkColor">Gray</Color>
+                <!-- Стили Expander -->
+                <Color x:Key="ExpanderHeaderBackground">#F5F5F5</Color>
+                <Color x:Key="ExpanderHeaderForeground">#212121</Color>
+                <Color x:Key="ExpanderContentBackground">#FFFFFF</Color>
+                <Color x:Key="ExpanderBorderColor">#E3E3E3</Color>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid>
+    <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>  <!-- График -->
             <ColumnDefinition Width="300"/> <!-- Панель управления -->
@@ -40,7 +144,7 @@
             </Grid.RowDefinitions>
             <Canvas Grid.Row="0" Grid.Column="0" x:Name="MainCanvas"/>
             
-            <Grid Grid.Row="1" Height="40" Background="#EEE"> 
+            <Grid Grid.Row="1" Height="40" Background="{DynamicResource StatusBarColor}"> 
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
@@ -50,23 +154,38 @@
                 <TextBlock Text="{Binding GridCoordinates}" 
                         VerticalAlignment="Center"
                         Margin="10,0"
-                        FontSize="12"/>
+                        FontSize="12"
+                        Foreground="{DynamicResource ForegroundColor}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,10,0">
-                    <Button Content="Сохранить _PNG" Margin="5,0" Click="SaveToPng_Click"/>
-                    <Button Content="Сохранить JSON" Margin="5,0" Click="SaveToJson_Click"/>
-                    <Button Content="Загрузить JSON" Margin="5,0" Click="LoadFromJson_Click"/>
+                    <Button Content="Сохранить _PNG" Margin="5,0" Click="SaveToPng_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="Сохранить JSON" Margin="5,0" Click="SaveToJson_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="Загрузить JSON" Margin="5,0" Click="LoadFromJson_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0">
-                    <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"/>
-                    <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"/>
-                    <Button Content="←" Width="30" Margin="5,0" Click="RotateRight_Click"/>
-                    <Button Content="→" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
+                    <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="←" Width="30" Margin="5,0" Click="RotateRight_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="→" Width="30" Margin="5,0" Click="RotateLeft_Click"
+                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                    Foreground="{DynamicResource ForegroundColor}"/>
                 </StackPanel>
             </Grid>
         </Grid>
         
         <!-- Правая панель управления -->
-        <Grid Grid.Column="1" Background="#F5F5F5">
+        <Grid Grid.Column="1" Background="{DynamicResource BackgroundColor}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -79,18 +198,20 @@
                     <TextBlock Text="Список функций" 
                             Margin="5" 
                             FontWeight="Bold"
-                            Background="#EEE"
-                            Padding="5"/>
+                            Padding="5"
+                            Foreground="{DynamicResource ForegroundColor}"/>
                     
                     <ListBox x:Name="FunctionsList" 
                             ItemsSource="{Binding Functions}" 
                             SelectedItem="{Binding SelectedFunction, Mode=TwoWay}"
-                            Height="150"
-                            Margin="5">
+                            Height="150" Margin="5"
+                            Background="{DynamicResource PanelBackgroundColor}"
+                            Foreground="{DynamicResource ForegroundColor}">
                         <ListBox.DataTemplates>
                             <DataTemplate DataType="vm:FunctionModel">
                                 <StackPanel Orientation="Horizontal" Margin="5" HorizontalAlignment="Center">
-                                    <TextBlock Text="{Binding Name}" Margin="2"/>
+                                    <TextBlock Text="{Binding Name}" Margin="2"
+                                    Foreground="{DynamicResource ForegroundColor}"/>
                                     <CheckBox IsChecked="{Binding IsVisible}" Margin="5,0,5,0"
                                     Click="UpdateGridFromVM"/>
                                 </StackPanel>
@@ -99,8 +220,12 @@
                     </ListBox>
                     
                     <StackPanel Orientation="Horizontal" Margin="5" HorizontalAlignment="Center">
-                        <Button x:Name="PlusButton" Content="+" Margin="0,0,5,0" Width="30" Command="{Binding AddFunctionCommand}"/>
-                        <Button Content="-" Margin="5,0,0,0" Width="30" Command="{Binding RemoveFunctionCommand}"/>
+                        <Button x:Name="PlusButton" Content="+" Margin="0,0,5,0" Width="30" Command="{Binding AddFunctionCommand}"
+                        Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                        Foreground="{DynamicResource ForegroundColor}"/>
+                        <Button Content="-" Margin="5,0,0,0" Width="30" Command="{Binding RemoveFunctionCommand}"
+                        Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
+                        Foreground="{DynamicResource ForegroundColor}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -128,28 +253,34 @@
                     </StackPanel>
         
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
-                        <TextBlock Text="Шаг сетки:" VerticalAlignment="Center" Width="100"/>
+                        <TextBlock Text="Шаг сетки:" VerticalAlignment="Center" Width="100"
+                        Foreground="{DynamicResource ForegroundColor}"/>
                         <Slider Minimum="1" Maximum="100" 
                             Value="{Binding StepSize, Mode=TwoWay}"
                             Width="100" VerticalAlignment="Center"
                             ValueChanged="OnFunctionStepSizeChanged"/>
                         <TextBlock Text="{Binding StepSize, StringFormat='{}{0:F2}'}" 
-                                Margin="10,0" VerticalAlignment="Center"/>
+                                Margin="10,0" VerticalAlignment="Center"
+                                Foreground="{DynamicResource ForegroundColor}"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
-                        <TextBlock Text="Шаг цвета:" VerticalAlignment="Center" Width="100"/>
+                        <TextBlock Text="Шаг цвета:" VerticalAlignment="Center" Width="100"
+                        Foreground="{DynamicResource ForegroundColor}"/>
                         <Slider Minimum="2" Maximum="50" 
                             Value="{Binding StepColor, Mode=TwoWay}"
                             Width="100" VerticalAlignment="Center"
                             ValueChanged="OnFunctionStepColorChanged"/>
                         <TextBlock Text="{Binding StepColor, StringFormat='{}{0:F2}'}" 
-                                Margin="10,0" VerticalAlignment="Center"/>
+                                Margin="10,0" VerticalAlignment="Center"
+                                Foreground="{DynamicResource ForegroundColor}"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>
             <!-- Группа "Видимость элементов" -->
             <Button Grid.Row="3" Content="Настройки сцены" Margin="5" Width="290" 
-            Padding="15,12,0,12" Background="White" BorderBrush="Gray"
+            Padding="15,12,0,12" Background="{DynamicResource PanelBackgroundColor}" 
+            BorderBrush="{DynamicResource BorderColor}"
+            Foreground="{DynamicResource ForegroundColor}"
             VerticalContentAlignment="Center"
             Click="ColorsSceneWindow_Click"/>
         </Grid>

@@ -50,13 +50,13 @@ namespace GoodbyeDiplom.Views
             Height = 600;
             var vm = new MainWindowViewModel();
             DataContext = vm;
-            // var button = this.FindControl<Button>("CreateFunction");
+
             PointerPressed += OnPointerPressed;
             PointerReleased += OnPointerReleased;
             PointerMoved += OnPointerMoved;
             PointerWheelChanged += OnPointerWheelChanged;
             SizeChanged += OnSizeChanged;
-            // button.Click += OnCreateButtonPressed;
+            
             PointerMoved += (s, e) => UpdateMouseCoordinates(e);
             OnChangedValues();
         }
@@ -94,13 +94,7 @@ namespace GoodbyeDiplom.Views
                 DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
             
             
-            // 2. Рисуем оси координат (статично) 
-            if (vm.ShowAxes)
-            {
-                DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X", centerX, centerY, fixedCellSize);
-                DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y", centerX, centerY, fixedCellSize);
-                DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z", centerX, centerY, fixedCellSize);
-            }
+
             // 3. Рисуем поверхность(-и) функции(-й) (масштабируется)
             if (vm.ShowGraphic)
             {
@@ -134,29 +128,37 @@ namespace GoodbyeDiplom.Views
         }
         private void ShowPolygons()
         {
+            if (DataContext is not MainWindowViewModel vm) return;
+            double centerX = (Bounds.Width - 300) / 2;
+            double centerY = Bounds.Height / 2;
+            // Фиксированный размер для куба, осей и СЕТКИ
+            double fixedCellSize = Math.Min(Bounds.Width - 300, Bounds.Height) / 20;
+            var cameraPos = CalculateCameraPosition();
+            var axis_vec = new Point3D(cameraPos.X - 0, cameraPos.Y - 0,
+            cameraPos.Z - 0);
+            double dist = Math.Sqrt(Math.Pow(axis_vec.X, 2) + 
+                                    Math.Pow(axis_vec.Y, 2) + 
+                                    Math.Pow(axis_vec.Z, 2));
+            bool key = true;
             foreach (var poly in polygons)
             {
-                
+                if (dist > poly.distance && key)
+                {
+                    // 2. Рисуем оси координат (статично) 
+                    if (vm.ShowAxes)
+                    {
+                        DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X",
+                         centerX, centerY, fixedCellSize);
+                        DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y",
+                        centerX, centerY, fixedCellSize);
+                        DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z",
+                        centerX, centerY, fixedCellSize);
+                    }
+                    key = false;
+                }
                 canvas.Children.Add(poly.triangle);
+
             }
-            // foreach (var poly in polygons)
-            // {
-            //     // Проверяем пересечение с уже отрисованными полигонами
-            //     bool isVisible = true;
-            //     foreach (var existing in canvas.Children.OfType<Polygon>())
-            //     {
-            //         if (PolygonsIntersect(poly, existing))
-            //         {
-            //             isVisible = false;
-            //             break;
-            //         }
-            //     }
-                
-            //     if (isVisible)
-            //     {
-            //         canvas.Children.Add(poly.triangle);
-            //     }
-            // }
         }
 
         private bool PolygonsIntersect(Polygons poly1, Polygon existing)
@@ -567,11 +569,12 @@ namespace GoodbyeDiplom.Views
 
             var currentPosition = e.GetPosition(this);
             var delta = currentPosition - _lastMousePosition;
-            
-            _angleY -= delta.X * 0.01;
-            _angleX += delta.Y * 0.01;
-            _angleX = Math.Clamp(_angleX, -Math.PI/2 + 0.1, Math.PI/2 - 0.1);
-            
+            if (canvas.IsPointerOver)
+            {
+                _angleY -= delta.X * 0.01;
+                _angleX += delta.Y * 0.01;
+                _angleX = Math.Clamp(_angleX, -Math.PI/2 + 0.1, Math.PI/2 - 0.1);
+            }
             _lastMousePosition = currentPosition;
             UpdateGrid();
         }

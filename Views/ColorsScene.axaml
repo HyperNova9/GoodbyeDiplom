@@ -53,7 +53,7 @@
                         Color="{Binding ColorsScene.ColorGrid, Mode=TwoWay}"
                         ColorChanged="OnColorChanged"/>
         </StackPanel>
-        <StackPanel>
+        <StackPanel Margin="10,0,10,0">
             <TextBlock Text="Видимость элементов" FontWeight="Bold" Margin="0,10,0,5"/>
             <CheckBox Content="Оси координат" 
                     IsChecked="{Binding ShowAxes}" Margin="5,0,5,0"
@@ -71,11 +71,11 @@
                     IsChecked="{Binding ShowGraphic}" Margin="5,0,5,0"
                     Click="UpdateGridFromVM"/>
         </StackPanel>
-        <StackPanel>
+        <StackPanel Margin="10,0,10,0">
             <TextBlock Text="Интерфейс" FontWeight="Bold" Margin="0,10,0,5"/>
-            <CheckBox Content="Тёмный режим" 
-                    IsChecked="{Binding IsDarkMode}" Margin="5,0,5,0"
-                    Click="DarkModeClick"/>
+            <CheckBox Content="Тёмный режим" Margin="5,0,5,0" x:Name="ThemeToggle" 
+            IsChecked="{Binding IsDarkMode, Mode=TwoWay}" Checked="DarkModeClick" 
+            Unchecked="DarkModeClick"/>
         </StackPanel>
     </StackPanel>
 </Window>
