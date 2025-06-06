@@ -41,10 +41,13 @@ namespace GoodbyeDiplom.Views
                 resources["TextBoxForegroundColor"] = Color.Parse("#FFFFFF");
                 resources["TextBoxWatermarkColor"] = Color.Parse("#AAAAAA");
 
-                this.Resources["ExpanderHeaderBackground"] = Color.Parse("#3D3D3D");
-                this.Resources["ExpanderHeaderForeground"] = Color.Parse("#FFFFFF");
-                this.Resources["ExpanderContentBackground"] = Color.Parse("#2D2D2D");
-                this.Resources["ExpanderBorderColor"] = Color.Parse("#4D4D4D");
+                resources["ExpanderHeaderBackground"] = Color.Parse("#3D3D3D");
+                resources["ExpanderHeaderForeground"] = Color.Parse("#FFFFFF");
+                resources["ExpanderContentBackground"] = Color.Parse("#2D2D2D");
+                resources["ExpanderBorderColor"] = Color.Parse("#4D4D4D");
+
+                resources["ButtonHoverBackground"] = Color.Parse("#4D4D4D");
+                resources["ButtonPressedBackground"] = Color.Parse("#3D3D3D");
             }
             else
             {
@@ -58,11 +61,14 @@ namespace GoodbyeDiplom.Views
                 resources["TextBoxBackgroundColor"] = Color.Parse("#FFFFFF");
                 resources["TextBoxForegroundColor"] = Color.Parse("#000000");
                 resources["TextBoxWatermarkColor"] = Color.Parse("#808080");
+
+                resources["ExpanderHeaderBackground"] = Color.Parse("#F5F5F5");
+                resources["ExpanderHeaderForeground"] = Color.Parse("#212121");
+                resources["ExpanderContentBackground"] = Color.Parse("#FFFFFF");
+                resources["ExpanderBorderColor"] = Color.Parse("#E3E3E3");
                 
-                this.Resources["ExpanderHeaderBackground"] = Color.Parse("#F5F5F5");
-                this.Resources["ExpanderHeaderForeground"] = Color.Parse("#212121");
-                this.Resources["ExpanderContentBackground"] = Color.Parse("#FFFFFF");
-                this.Resources["ExpanderBorderColor"] = Color.Parse("#E3E3E3");
+                resources["ButtonHoverBackground"] = Color.Parse("#E8E8E8");
+                resources["ButtonPressedBackground"] = Color.Parse("#D8D8D8");
             }
         }
     }

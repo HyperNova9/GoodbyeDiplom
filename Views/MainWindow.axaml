@@ -13,7 +13,24 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
     <Window.Styles>
-       <Style Selector="Expander">
+        <!-- Стиль для кнопок -->
+        <Style Selector="Button">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+            <Setter Property="Background" Value="{DynamicResource PanelBackgroundColor}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        
+        <Style Selector="Button:pointerover">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+            <Setter Property="Background" Value="{DynamicResource ButtonHoverBackground}" />
+        </Style>
+        
+        <Style Selector="Button:pressed">
+            <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
+            <Setter Property="Background" Value="{DynamicResource ButtonPressedBackground}" />
+        </Style>
+        <Style Selector="Expander">
             <Setter Property="Background" Value="{DynamicResource PanelBackgroundColor}" />
             <Setter Property="Foreground" Value="{DynamicResource ForegroundColor}" />
             <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}" />
@@ -128,11 +145,15 @@
                 <Color x:Key="ExpanderHeaderForeground">#212121</Color>
                 <Color x:Key="ExpanderContentBackground">#FFFFFF</Color>
                 <Color x:Key="ExpanderBorderColor">#E3E3E3</Color>
+
+                <!-- Цвета для состояний кнопок -->
+                <Color x:Key="ButtonHoverBackground">#E8E8E8</Color>
+                <Color x:Key="ButtonPressedBackground">#D8D8D8</Color>
         </ResourceDictionary>
     </Window.Resources>
     <Grid >
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>  <!-- График -->
+            <ColumnDefinition  Width="*"/>  <!-- График -->
             <ColumnDefinition Width="300"/> <!-- Панель управления -->
         </Grid.ColumnDefinitions>
         
@@ -157,29 +178,15 @@
                         FontSize="12"
                         Foreground="{DynamicResource ForegroundColor}"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,10,0">
-                    <Button Content="Сохранить _PNG" Margin="5,0" Click="SaveToPng_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
-                    <Button Content="Сохранить JSON" Margin="5,0" Click="SaveToJson_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
-                    <Button Content="Загрузить JSON" Margin="5,0" Click="LoadFromJson_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="Сохранить PNG" Margin="5,0" Click="SaveToPng_Click"/>
+                    <Button Content="Сохранить JSON" Margin="5,0" Click="SaveToJson_Click"/>
+                    <Button Content="Загрузить JSON" Margin="5,0" Click="LoadFromJson_Click"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0">
-                    <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
-                    <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
-                    <Button Content="←" Width="30" Margin="5,0" Click="RotateRight_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
-                    <Button Content="→" Width="30" Margin="5,0" Click="RotateLeft_Click"
-                    Background="{DynamicResource PanelBackgroundColor}" BorderBrush="{DynamicResource BorderColor}"
-                    Foreground="{DynamicResource ForegroundColor}"/>
+                    <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"/>
+                    <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"/>
+                    <Button Content="←" Width="30" Margin="5,0" Click="RotateRight_Click"/>
+                    <Button Content="→" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
                 </StackPanel>
             </Grid>
         </Grid>
@@ -255,13 +262,12 @@
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
                         <TextBlock Text="Шаг сетки:" VerticalAlignment="Center" Width="100"
                         Foreground="{DynamicResource ForegroundColor}"/>
-                        <Slider Minimum="1" Maximum="100" 
+                        <Slider Minimum="1" Maximum="50" 
                             Value="{Binding StepSize, Mode=TwoWay}"
                             Width="100" VerticalAlignment="Center"
                             ValueChanged="OnFunctionStepSizeChanged"/>
-                        <TextBlock Text="{Binding StepSize, StringFormat='{}{0:F2}'}" 
-                                Margin="10,0" VerticalAlignment="Center"
-                                Foreground="{DynamicResource ForegroundColor}"/>
+                        <TextBox Text="{Binding StepSize, StringFormat='{}{0:F2}', Mode=TwoWay}" 
+                                Margin="10,0" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
                         <TextBlock Text="Шаг цвета:" VerticalAlignment="Center" Width="100"
@@ -270,17 +276,14 @@
                             Value="{Binding StepColor, Mode=TwoWay}"
                             Width="100" VerticalAlignment="Center"
                             ValueChanged="OnFunctionStepColorChanged"/>
-                        <TextBlock Text="{Binding StepColor, StringFormat='{}{0:F2}'}" 
-                                Margin="10,0" VerticalAlignment="Center"
-                                Foreground="{DynamicResource ForegroundColor}"/>
+                        <TextBox Text="{Binding StepColor, StringFormat='{}{0:F2}', Mode=TwoWay}" 
+                                Margin="10,0" VerticalAlignment="Center"/>
                     </StackPanel>
                 </StackPanel>
             </Expander>
             <!-- Группа "Видимость элементов" -->
             <Button Grid.Row="3" Content="Настройки сцены" Margin="5" Width="290" 
-            Padding="15,12,0,12" Background="{DynamicResource PanelBackgroundColor}" 
-            BorderBrush="{DynamicResource BorderColor}"
-            Foreground="{DynamicResource ForegroundColor}"
+            Padding="15,12,0,12"
             VerticalContentAlignment="Center"
             Click="ColorsSceneWindow_Click"/>
         </Grid>

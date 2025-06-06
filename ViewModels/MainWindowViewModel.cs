@@ -138,12 +138,21 @@ public class MainWindowViewModel : ViewModelBase
     public double StepSize
     {
         get => _stepSize;
-        set => this.RaiseAndSetIfChanged(ref _stepSize, value);
+        set
+        {
+            // Ограничиваем значение и обновляем поле
+            var clampedValue = Math.Clamp(value, 1, 50);
+            this.RaiseAndSetIfChanged(ref _stepSize, clampedValue);
+        }
     }
     public double StepColor
     {
         get => _stepColor;
-        set => this.RaiseAndSetIfChanged(ref _stepColor, value);
+        set
+        {
+            var clampedValue = Math.Clamp(value, 1, 100);
+            this.RaiseAndSetIfChanged(ref _stepColor, clampedValue);
+        } 
     }
     public bool ShowAxes
     {

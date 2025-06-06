@@ -89,12 +89,18 @@ namespace GoodbyeDiplom.Views
             // Адаптивный шаг сетки (увеличивается при уменьшении масштаба)
             double DynamicStep = DynStepCalc(GridSize);
             
-            // 1. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
-            if (vm.ShowGrid)
-                DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
-            
-            
 
+            
+            
+            if (vm.ShowAxes)
+            {
+                DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X",
+                    centerX, centerY, fixedCellSize);
+                DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y",
+                centerX, centerY, fixedCellSize);
+                DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z",
+                centerX, centerY, fixedCellSize);
+            }
             // 3. Рисуем поверхность(-и) функции(-й) (масштабируется)
             if (vm.ShowGraphic)
             {
@@ -117,11 +123,23 @@ namespace GoodbyeDiplom.Views
                 }  
                 vm.FunctionExpression = temp;
                 vm.UpdateFunction();
-                PolygonsSort();
-                Console.WriteLine(polygons.Count); 
-                ShowPolygons();       
+       
             }
-
+            PolygonsSort();
+            Console.WriteLine(polygons.Count); 
+            ShowPolygons();
+                        // 1. Рисуем координатные плоскости (ЛИНИИ СЕТКИ - статично)
+            if (vm.ShowGrid)
+                DrawXYPlane(centerX, centerY, DynamicStep, fixedCellSize); // <- fixedCellSize
+            if (vm.ShowLabels)
+            {
+                DrawAxisLabel(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X",
+                    centerX, centerY, fixedCellSize);
+                DrawAxisLabel(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y",
+                centerX, centerY, fixedCellSize);
+                DrawAxisLabel(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z",
+                centerX, centerY, fixedCellSize);
+            }
             // 4. Рисуем кубический каркас (статично)
             if (vm.ShowCube)
                 DrawCubeFrame(centerX, centerY, fixedCellSize);
@@ -129,35 +147,9 @@ namespace GoodbyeDiplom.Views
         private void ShowPolygons()
         {
             if (DataContext is not MainWindowViewModel vm) return;
-            double centerX = (Bounds.Width - 300) / 2;
-            double centerY = Bounds.Height / 2;
-            // Фиксированный размер для куба, осей и СЕТКИ
-            double fixedCellSize = Math.Min(Bounds.Width - 300, Bounds.Height) / 20;
-            var cameraPos = CalculateCameraPosition();
-            var axis_vec = new Point3D(cameraPos.X - 0, cameraPos.Y - 0,
-            cameraPos.Z - 0);
-            double dist = Math.Sqrt(Math.Pow(axis_vec.X, 2) + 
-                                    Math.Pow(axis_vec.Y, 2) + 
-                                    Math.Pow(axis_vec.Z, 2));
-            bool key = true;
             foreach (var poly in polygons)
             {
-                if (dist > poly.distance && key)
-                {
-                    // 2. Рисуем оси координат (статично) 
-                    if (vm.ShowAxes)
-                    {
-                        DrawAxis(-CubeSize, 0, 0, CubeSize, 0, 0, vm.ColorsScene.ColorX, "X",
-                         centerX, centerY, fixedCellSize);
-                        DrawAxis(0, -CubeSize, 0, 0, CubeSize, 0, vm.ColorsScene.ColorY, "Y",
-                        centerX, centerY, fixedCellSize);
-                        DrawAxis(0, 0, -CubeSize, 0, 0, CubeSize, vm.ColorsScene.ColorZ, "Z",
-                        centerX, centerY, fixedCellSize);
-                    }
-                    key = false;
-                }
                 canvas.Children.Add(poly.triangle);
-
             }
         }
 
@@ -258,32 +250,73 @@ namespace GoodbyeDiplom.Views
             double x2, double y2, double z2,
             Color input_color, string label,
             double centerX, double centerY, double cellSize)
-        {
+        {   
             if (DataContext is not MainWindowViewModel vm) return;
-
-            var start = ProjectTo2D(x1, y1, z1, cellSize);
-            var end = ProjectTo2D(x2, y2, z2, cellSize);
+            Point start = new Point(0,0), end = new Point(0,0);
+            var h = 100;
+            double step = (double)(2 * CubeSize) / h;
             var color = new SolidColorBrush(input_color);
-            var line = new Line
+            
+            var cameraPos = CalculateCameraPosition();
+            var middleP = new Point3D((x2 - x1) / 2, (y2 - y1) / 2, (z2 - z1) / 2);
+            for (double i = -CubeSize; i < CubeSize - step; i += step)
             {
-                StartPoint = new Point(start.X + centerX, start.Y + centerY),
-                EndPoint = new Point(end.X + centerX, end.Y + centerY),
-                Stroke = color,
-                StrokeThickness = 2
-            };
-            canvas.Children.Add(line);
-            // Добавляем подпись оси (статичную)
-            if (vm.ShowLabels)
+                double dist = 0;
+                if (x1 != 0 && x2 != 0)
+                {
+                    middleP = new Point3D((i + step + i) / 2, (y2 - y1) / 2, (z2 - z1) / 2);
+                    start = ProjectTo2D(i, y1, z1, cellSize);
+                    end = ProjectTo2D(i + step, y2, z2, cellSize);
+                }
+                else if (y1 != 0 && y2 != 0)
+                {
+                    middleP = new Point3D((x2 - x1) / 2, (i + step + i) / 2, (z2 - z1) / 2);
+                    start = ProjectTo2D(x1, i, z1, cellSize);
+                    end = ProjectTo2D(x2, i + step, z2, cellSize);
+                }
+                else if (z1 != 0 && z2 != 0)
+                {
+                    middleP = new Point3D((x2 - x1) / 2, (y2 - y1) / 2, (i + step + i) / 2);
+                    start = ProjectTo2D(x1, y1, i, cellSize);
+                    end = ProjectTo2D(x2, y2, i + step, cellSize);
+                }
+                else
+                    return;
+                dist = Math.Sqrt(Math.Pow(cameraPos.X - middleP.X, 2)
+                    + Math.Pow(cameraPos.Y - middleP.Y, 2)
+                    + Math.Pow(cameraPos.Z - middleP.Z, 2));
+                var line = new Line
+                {
+                    StartPoint = new Point(start.X + centerX, start.Y + centerY),
+                    EndPoint = new Point(end.X + centerX, end.Y + centerY),
+                    Stroke = color,
+                    StrokeThickness = 2
+                };
+                //canvas.Children.Add(line);
+                var add_line = new Polygons(line, dist, new Point3D(0, 0, 0));
+                polygons.Add(add_line);
+            }
+            
+        }
+        private void DrawAxisLabel(
+            double x1, double y1, double z1,
+            double x2, double y2, double z2,
+            Color input_color, string label,
+            double centerX, double centerY, double cellSize)
             {
+                Point start = new Point(0,0), end = new Point(0,0);
+                var color = new SolidColorBrush(input_color);
+
+                start = ProjectTo2D(x1, y1, z1, cellSize);
+                end = ProjectTo2D(x2, y2, z2, cellSize);
+
                 var textBlock = CreateLabel(label, color, 16);
                 textBlock.FontWeight = FontWeight.Bold;
-                
+
                 canvas.Children.Add(textBlock);
                 Canvas.SetLeft(textBlock, end.X + centerX + (label == "X" ? 10 : 0));
                 Canvas.SetTop(textBlock, end.Y + centerY - (label == "Z" ? 20 : 0));
             }
-            
-        }
         //Функция для отрисовки подписей к самим осям (X,Y,Z)
         private TextBlock CreateLabel(string text, IBrush color, double fontSize)
         {
@@ -996,16 +1029,6 @@ namespace GoodbyeDiplom.Views
                 return double.PositiveInfinity;
             }
         }
-        //Ещё один обработчки разрывов
-        // private bool ShouldSkipPolygon(Point p1, Point p2, Point p3, Point p4, double maxDistance)
-        // {
-        //     // Увеличиваем максимальное допустимое расстояние между точками
-        //     if (DistanceBetween(p1, p2) > maxDistance) return true;
-        //     if (DistanceBetween(p2, p3) > maxDistance) return true;
-        //     if (DistanceBetween(p3, p4) > maxDistance) return true;
-        //     if (DistanceBetween(p4, p1) > maxDistance) return true;
-        //     return false;
-        // }
         //Функция для расчёта расстояния между точками
         private double DistanceBetween(Point a, Point b)
         {

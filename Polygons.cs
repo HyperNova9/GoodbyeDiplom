@@ -7,10 +7,10 @@ namespace GoodbyeDiplom.ViewModels;
 
 public class Polygons : ViewModelBase
 {
-    public Polygon triangle;
+    public Shape triangle;
     public double distance = 0;
     public Point3D middlePoint;
-    public Polygons(Polygon triangle, double distance, Point3D middlePoint)
+    public Polygons(Shape triangle, double distance, Point3D middlePoint)
     {
         this.triangle = triangle;
         this.distance = distance;
