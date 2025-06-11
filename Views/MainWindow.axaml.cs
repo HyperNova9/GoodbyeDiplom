@@ -45,7 +45,6 @@ namespace GoodbyeDiplom.Views
             InitializeComponent();
             polygons = new Collection<Polygons>();
             canvas = MainCanvas;
-            Title = "3Ddiplom";
             Width = 800;
             Height = 600;
             var vm = new MainWindowViewModel();
@@ -559,13 +558,24 @@ namespace GoodbyeDiplom.Views
 
         public void RotateRight_Click(object sender, RoutedEventArgs e)
         {
-            _angleY -= 0.1;
+            _angleY += 0.1;
             UpdateGrid();
         }
 
         public void RotateLeft_Click(object sender, RoutedEventArgs e)
         {
-            _angleY += 0.1;
+            _angleY -= 0.1;
+            UpdateGrid();
+        }
+        public void RotateTop_Click(object sender, RoutedEventArgs e)
+        {
+            _angleX += 0.1;
+            UpdateGrid();
+        }
+
+        public void RotateBottom_Click(object sender, RoutedEventArgs e)
+        {
+            _angleX -= 0.1;
             UpdateGrid();
         }
         //Отрисовка объектов при загрузке окна
@@ -880,16 +890,16 @@ namespace GoodbyeDiplom.Views
                     double x2 = (x + step) * scaleFactor;
                     double y2 = (y + step) * scaleFactor;
 
-                    double z1 = SafeCalculate(vm, x, y, discontinuityThreshold);
-                    double z2 = SafeCalculate(vm, x + step, y, discontinuityThreshold);
-                    double z3 = SafeCalculate(vm, x + step, y + step, discontinuityThreshold);
-                    double z4 = SafeCalculate(vm, x, y + step, discontinuityThreshold);
+                    double z1 = SafeCalculate(vm, x, y, discontinuityThreshold, step);
+                    double z2 = SafeCalculate(vm, x + step, y, discontinuityThreshold, step);
+                    double z3 = SafeCalculate(vm, x + step, y + step, discontinuityThreshold, step);
+                    double z4 = SafeCalculate(vm, x, y + step, discontinuityThreshold, step);
 
                     // Пропускаем полигон, если обнаружен разрыв
-                    if (double.IsInfinity(z1)) continue;
-                    if (double.IsInfinity(z2)) continue;
-                    if (double.IsInfinity(z3)) continue;
-                    if (double.IsInfinity(z4)) continue;
+                    if (double.IsInfinity(z1) || double.IsNaN(z1)) continue;
+                    if (double.IsInfinity(z2) || double.IsNaN(z2)) continue;
+                    if (double.IsInfinity(z3) || double.IsNaN(z3)) continue;
+                    if (double.IsInfinity(z4) || double.IsNaN(z4)) continue;
 
                     
                     // Вычисляем z для каждой точки
@@ -941,7 +951,7 @@ namespace GoodbyeDiplom.Views
                                 GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
                                 Radius = 1
                             },
-                            Stroke = Brushes.Transparent,
+                            Stroke = new SolidColorBrush(color1),
                             Opacity = double.IsInfinity(z1) || double.IsInfinity(z2) || double.IsInfinity(z3) ? 0.5 : 1
                         };
 
@@ -965,7 +975,7 @@ namespace GoodbyeDiplom.Views
                                 GradientOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
                                 Radius = 1
                             },
-                            Stroke = Brushes.Transparent,
+                            Stroke = new SolidColorBrush(color1),
                             Opacity = double.IsInfinity(z1) || double.IsInfinity(z3) || double.IsInfinity(z4) ? 0.5 : 1
                         };
                         var triangle_poly1 = new Polygons(triangle1, tr1_dist, tr1_middleP);
@@ -1012,13 +1022,14 @@ namespace GoodbyeDiplom.Views
 
         }
         //Безопасный расчёт значения функции с учётом разрывов второго рода
-        private double SafeCalculate(MainWindowViewModel vm, double x, double y, double threshold)
+        private double SafeCalculate(MainWindowViewModel vm, double x, double y, double threshold, double step)
         {
             try
-            {
+            {   
                 double result = vm.CalculateFunction(x, y);
-                
-                // Проверяем на слишком большие значения (разрывы)
+                double prev_result = vm.CalculateFunction(x, y - step);
+                if (double.IsNaN(result))
+                        return double.NaN;
                 if (double.IsInfinity(result) || Math.Abs(result) > threshold)
                     return double.PositiveInfinity;
                     

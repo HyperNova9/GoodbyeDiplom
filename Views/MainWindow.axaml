@@ -7,7 +7,7 @@
         x:Class="GoodbyeDiplom.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="3D Function Grapher"
+        Title="3DGraphEditor"
         WindowState="Maximized">
     <Design.DataContext>
         <vm:MainWindowViewModel/>
@@ -185,8 +185,10 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,10,0">
                     <Button Content="+" Width="30" Margin="5,0" Click="ZoomIn_Click"/>
                     <Button Content="-" Width="30" Margin="5,0" Click="ZoomOut_Click"/>
-                    <Button Content="←" Width="30" Margin="5,0" Click="RotateRight_Click"/>
-                    <Button Content="→" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
+                    <Button Content="←" Width="30" Margin="5,0" Click="RotateLeft_Click"/>
+                    <Button Content="→" Width="30" Margin="5,0" Click="RotateRight_Click"/>
+                    <Button Content="↑" Width="30" Margin="5,0" Click="RotateTop_Click"/>
+                    <Button Content="↓" Width="30" Margin="5,0" Click="RotateBottom_Click"/>
                 </StackPanel>
             </Grid>
         </Grid>
@@ -253,12 +255,17 @@
                     
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
                         <TextBlock Text="Цвет:" VerticalAlignment="Center" Width="100"/>
-                        <ColorPicker Color="{Binding StartColor, Mode=TwoWay}"
-                        ColorChanged="OnFunctionColorStartChanged" Width="60" Height="30"/>
-                        <ColorPicker Color="{Binding EndColor, Mode=TwoWay}"
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,0">
+                            <TextBlock Text="Мин." Width="40" Margin="0,0,0,5"/>
+                            <ColorPicker Color="{Binding StartColor, Mode=TwoWay}"
+                            ColorChanged="OnFunctionColorStartChanged" Width="60" Height="30"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Vertical" Margin="0,0,0,0">
+                            <TextBlock Text="Макс." Width="40" Margin="0,0,0,5"/>
+                            <ColorPicker Color="{Binding EndColor, Mode=TwoWay}"
                         ColorChanged="OnFunctionColorEndChanged" Width="60" Height="30"/>
+                        </StackPanel>
                     </StackPanel>
-        
                     <StackPanel Orientation="Horizontal" Margin="5,0,5,5">
                         <TextBlock Text="Шаг сетки:" VerticalAlignment="Center" Width="100"
                         Foreground="{DynamicResource ForegroundColor}"/>
